@@ -1,0 +1,349 @@
+[
+    {
+        "title": "The Latent Color Subspace: Emergent Order in High-Dimensional Chaos",
+        "authors": [
+            "Mateusz Pach",
+            "Jessica Bader",
+            "Quentin Bouniot",
+            "Serge Belongie",
+            "Zeynep Akata"
+        ],
+        "summary": "Text-to-image generation models have advanced rapidly, yet achieving fine-grained control over generated images remains difficult, largely due to limited understanding of how semantic information is encoded. We develop an interpretation of the color representation in the Variational Autoencoder latent space of FLUX.1 [Dev], revealing a structure reflecting Hue, Saturation, and Lightness. We verify our Latent Color Subspace (LCS) interpretation by demonstrating that it can both predict and explicitly control color, introducing a fully training-free method in FLUX based solely on closed-form latent-space manipulation. Code is available at https://github.com/ExplainableML/LCS.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12261v1",
+        "published": "2026-03-12 17:59:48+00:00",
+        "categories": [
+            "cs.LG",
+            "cs.AI",
+            "cs.CV"
+        ]
+    },
+    {
+        "title": "Spatial-TTT: Streaming Visual-based Spatial Intelligence with Test-Time Training",
+        "authors": [
+            "Fangfu Liu",
+            "Diankun Wu",
+            "Jiawei Chi",
+            "Yimo Cai",
+            "Yi-Hsin Hung",
+            "Xumin Yu",
+            "Hao Li",
+            "Han Hu",
+            "Yongming Rao",
+            "Yueqi Duan"
+        ],
+        "summary": "Humans perceive and understand real-world spaces through a stream of visual observations. Therefore, the ability to streamingly maintain and update spatial evidence from potentially unbounded video streams is essential for spatial intelligence. The core challenge is not simply longer context windows but how spatial information is selected, organized, and retained over time. In this paper, we propose Spatial-TTT towards streaming visual-based spatial intelligence with test-time training (TTT), which adapts a subset of parameters (fast weights) to capture and organize spatial evidence over long-horizon scene videos. Specifically, we design a hybrid architecture and adopt large-chunk updates parallel with sliding-window attention for efficient spatial video processing. To further promote spatial awareness, we introduce a spatial-predictive mechanism applied to TTT layers with 3D spatiotemporal convolution, which encourages the model to capture geometric correspondence and temporal continuity across frames. Beyond architecture design, we construct a dataset with dense 3D spatial descriptions, which guides the model to update its fast weights to memorize and organize global 3D spatial signals in a structured manner. Extensive experiments demonstrate that Spatial-TTT improves long-horizon spatial understanding and achieves state-of-the-art performance on video spatial benchmarks. Project page: https://liuff19.github.io/Spatial-TTT.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12255v1",
+        "published": "2026-03-12 17:58:58+00:00",
+        "categories": [
+            "cs.CV",
+            "cs.LG"
+        ]
+    },
+    {
+        "title": "SciMDR: Benchmarking and Advancing Scientific Multimodal Document Reasoning",
+        "authors": [
+            "Ziyu Chen",
+            "Yilun Zhao",
+            "Chengye Wang",
+            "Rilyn Han",
+            "Manasi Patwardhan",
+            "Arman Cohan"
+        ],
+        "summary": "Constructing scientific multimodal document reasoning datasets for foundation model training involves an inherent trade-off among scale, faithfulness, and realism. To address this challenge, we introduce the synthesize-and-reground framework, a two-stage pipeline comprising: (1) Claim-Centric QA Synthesis, which generates faithful, isolated QA pairs and reasoning on focused segments, and (2) Document-Scale Regrounding, which programmatically re-embeds these pairs into full-document tasks to ensure realistic complexity. Using this framework, we construct SciMDR, a large-scale training dataset for cross-modal comprehension, comprising 300K QA pairs with explicit reasoning chains across 20K scientific papers. We further construct SciMDR-Eval, an expert-annotated benchmark to evaluate multimodal comprehension within full-length scientific workflows. Experiments demonstrate that models fine-tuned on SciMDR achieve significant improvements across multiple scientific QA benchmarks, particularly in those tasks requiring complex document-level reasoning.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12249v1",
+        "published": "2026-03-12 17:57:52+00:00",
+        "categories": [
+            "cs.CL",
+            "cs.AI",
+            "cs.CV"
+        ]
+    },
+    {
+        "title": "Examining Reasoning LLMs-as-Judges in Non-Verifiable LLM Post-Training",
+        "authors": [
+            "Yixin Liu",
+            "Yue Yu",
+            "DiJia Su",
+            "Sid Wang",
+            "Xuewei Wang",
+            "Song Jiang",
+            "Bo Liu",
+            "Arman Cohan",
+            "Yuandong Tian",
+            "Zhengxing Chen"
+        ],
+        "summary": "Reasoning LLMs-as-Judges, which can benefit from inference-time scaling, provide a promising path for extending the success of reasoning models to non-verifiable domains where the output correctness/quality cannot be directly checked. However, while reasoning judges have shown better performance on static evaluation benchmarks, their effectiveness in actual policy training has not been systematically examined. Therefore, we conduct a rigorous study to investigate the actual impact of non-reasoning and reasoning judges in reinforcement-learning-based LLM alignment. Our controlled synthetic setting, where a \"gold-standard\" judge (gpt-oss-120b) provides preference annotations to train smaller judges, reveals key differences between non-reasoning and reasoning judges: non-reasoning judges lead to reward hacking easily, while reasoning judges can lead to policies that achieve strong performance when evaluated by the gold-standard judge. Interestingly, we find that the reasoning-judge-trained policies achieve such strong performance by learning to generate highly effective adversarial outputs that can also score well on popular benchmarks such as Arena-Hard by deceiving other LLM-judges. Combined with our further analysis, our study highlights both important findings and room for improvements for applying (reasoning) LLM-judges in non-verifiable LLM post-training.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12246v1",
+        "published": "2026-03-12 17:57:06+00:00",
+        "categories": [
+            "cs.AI",
+            "cs.CL",
+            "cs.LG"
+        ]
+    },
+    {
+        "title": "Separable neural architectures as a primitive for unified predictive and generative intelligence",
+        "authors": [
+            "Reza T. Batley",
+            "Apurba Sarker",
+            "Rajib Mostakim",
+            "Andrew Klichine",
+            "Sourav Saha"
+        ],
+        "summary": "Intelligent systems across physics, language and perception often exhibit factorisable structure, yet are typically modelled by monolithic neural architectures that do not explicitly exploit this structure. The separable neural architecture (SNA) addresses this by formalising a representational class that unifies additive, quadratic and tensor-decomposed neural models. By constraining interaction order and tensor rank, SNAs impose a structural inductive bias that factorises high-dimensional mappings into low-arity components. Separability need not be a property of the system itself: it often emerges in the coordinates or representations through which the system is expressed. Crucially, this coordinate-aware formulation reveals a structural analogy between chaotic spatiotemporal dynamics and linguistic autoregression. By treating continuous physical states as smooth, separable embeddings, SNAs enable distributional modelling of chaotic systems. This approach mitigates the nonphysical drift characteristics of deterministic operators whilst remaining applicable to discrete sequences. The compositional versatility of this approach is demonstrated across four domains: autonomous waypoint navigation via reinforcement learning, inverse generation of multifunctional microstructures, distributional modelling of turbulent flow and neural language modelling. These results establish the separable neural architecture as a domain-agnostic primitive for predictive and generative intelligence, capable of unifying both deterministic and distributional representations.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12244v1",
+        "published": "2026-03-12 17:56:54+00:00",
+        "categories": [
+            "cs.LG",
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "Incremental Neural Network Verification via Learned Conflicts",
+        "authors": [
+            "Raya Elsaleh",
+            "Liam Davis",
+            "Haoze Wu",
+            "Guy Katz"
+        ],
+        "summary": "Neural network verification is often used as a core component within larger analysis procedures, which generate sequences of closely related verification queries over the same network. In existing neural network verifiers, each query is typically solved independently, and information learned during previous runs is discarded, leading to repeated exploration of the same infeasible regions of the search space. In this work, we aim to expedite verification by reducing this redundancy. We propose an incremental verification technique that reuses learned conflicts across related verification queries. The technique can be added on top of any branch-and-bound-based neural network verifier. During verification, the verifier records conflicts corresponding to learned infeasible combinations of activation phases, and retains them across runs. We formalize a refinement relation between verification queries and show that conflicts learned for a query remain valid under refinement, enabling sound conflict inheritance. Inherited conflicts are handled using a SAT solver to perform consistency checks and propagation, allowing infeasible subproblems to be detected and pruned early during search. We implement the proposed technique in the Marabou verifier and evaluate it on three verification tasks: local robustness radius determination, verification with input splitting, and minimal sufficient feature set extraction. Our experiments show that incremental conflict reuse reduces verification effort and yields speedups of up to $1.9\\times$ over a non-incremental baseline.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12232v1",
+        "published": "2026-03-12 17:52:12+00:00",
+        "categories": [
+            "cs.LO",
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "Security Considerations for Artificial Intelligence Agents",
+        "authors": [
+            "Ninghui Li",
+            "Kaiyuan Zhang",
+            "Kyle Polley",
+            "Jerry Ma"
+        ],
+        "summary": "This article, a lightly adapted version of Perplexity's response to NIST/CAISI Request for Information 2025-0035, details our observations and recommendations concerning the security of frontier AI agents. These insights are informed by Perplexity's experience operating general-purpose agentic systems used by millions of users and thousands of enterprises in both controlled and open-world environments. Agent architectures change core assumptions around code-data separation, authority boundaries, and execution predictability, creating new confidentiality, integrity, and availability failure modes. We map principal attack surfaces across tools, connectors, hosting boundaries, and multi-agent coordination, with particular emphasis on indirect prompt injection, confused-deputy behavior, and cascading failures in long-running workflows. We then assess current defenses as a layered stack: input-level and model-level mitigations, sandboxed execution, and deterministic policy enforcement for high-consequence actions. Finally, we identify standards and research gaps, including adaptive security benchmarks, policy models for delegation and privilege control, and guidance for secure multi-agent system design aligned with NIST risk management principles.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12230v1",
+        "published": "2026-03-12 17:49:39+00:00",
+        "categories": [
+            "cs.LG",
+            "cs.AI",
+            "cs.CR"
+        ]
+    },
+    {
+        "title": "Neural Thickets: Diverse Task Experts Are Dense Around Pretrained Weights",
+        "authors": [
+            "Yulu Gan",
+            "Phillip Isola"
+        ],
+        "summary": "Pretraining produces a learned parameter vector that is typically treated as a starting point for further iterative adaptation. In this work, we instead view the outcome of pretraining as a distribution over parameter vectors, whose support already contains task-specific experts. We show that in small models such expert solutions occupy a negligible fraction of the volume of this distribution, making their discovery reliant on structured optimization methods such as gradient descent. In contrast, in large, well-pretrained models the density of task-experts increases dramatically, so that diverse, task-improving specialists populate a substantial fraction of the neighborhood around the pretrained weights. Motivated by this perspective, we explore a simple, fully parallel post-training method that samples $N$ parameter perturbations at random, selects the top $K$, and ensembles predictions via majority vote. Despite its simplicity, this approach is competitive with standard post-training methods such as PPO, GRPO, and ES for contemporary large-scale models.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12228v1",
+        "published": "2026-03-12 17:49:30+00:00",
+        "categories": [
+            "cs.LG",
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "Sparking Scientific Creativity via LLM-Driven Interdisciplinary Inspiration",
+        "authors": [
+            "Priyanka Kargupta",
+            "Shuhaib Mehri",
+            "Dilek Hakkani-Tur",
+            "Jiawei Han"
+        ],
+        "summary": "Despite interdisciplinary research leading to larger and longer-term impact, most work remains confined to single-domain academic silos. Recent AI-based approaches to scientific discovery show promise for interdisciplinary research, but many prioritize rapidly designing experiments and solutions, bypassing the exploratory, collaborative reasoning processes that drive creative interdisciplinary breakthroughs. As a result, prior efforts largely prioritize automating scientific discovery rather than augmenting the reasoning processes that underlie scientific disruption. We present Idea-Catalyst, a novel framework that systematically identifies interdisciplinary insights to support creative reasoning in both humans and large language models. Starting from an abstract research goal, Idea-Catalyst is designed to assist the brainstorming stage, explicitly avoiding premature anchoring on specific solutions. The framework embodies key metacognitive features of interdisciplinary reasoning: (a) defining and assessing research goals, (b) awareness of a domain's opportunities and unresolved challenges, and (c) strategic exploration of interdisciplinary ideas based on impact potential. Concretely, Idea-Catalyst decomposes an abstract goal (e.g., improving human-AI collaboration) into core target-domain research questions that guide the analysis of progress and open challenges within that domain. These challenges are reformulated as domain-agnostic conceptual problems, enabling retrieval from external disciplines (e.g., Psychology, Sociology) that address analogous issues. By synthesizing and recontextualizing insights from these domains back into the target domain, Idea-Catalyst ranks source domains by their interdisciplinary potential. Empirically, this targeted integration improves average novelty by 21% and insightfulness by 16%, while remaining grounded in the original research problem.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12226v1",
+        "published": "2026-03-12 17:48:34+00:00",
+        "categories": [
+            "cs.CL",
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "Portfolio of Solving Strategies in CEGAR-based Object Packing and Scheduling for Sequential 3D Printing",
+        "authors": [
+            "Pavel Surynek"
+        ],
+        "summary": "Computing power that used to be available only in supercomputers decades ago especially their parallelism is currently available in standard personal computer CPUs even in CPUs for mobile telephones. We show how to effectively utilize the computing power of modern multi-core personal computer CPU to solve the complex combinatorial problem of object arrangement and scheduling for sequential 3D printing. We achieved this by parallelizing the existing CEGAR-SEQ algorithm that solves the sequential object arrangement and scheduling by expressing it as a linear arithmetic formula which is then solved by a technique inspired by counterexample guided abstraction refinement (CEGAR). The original CEGAR-SEQ algorithm uses an object arrangement strategy that places objects towards the center of the printing plate. We propose alternative object arrangement strategies such as placing objects towards a corner of the printing plate and scheduling objects according to their height. Our parallelization is done at the high-level where we execute the CEGAR-SEQ algorithm in parallel with a portfolio of object arrangement strategies, an algorithm is called Porfolio-CEGAR-SEQ. Our experimental evaluation indicates that Porfolio-CEGAR-SEQ outperforms the original CEGAR-SEQ. When a batch of objects for multiple printing plates is scheduled, Portfolio-CEGAR-SEQ often uses fewer printing plates than CEGAR-SEQ.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12224v1",
+        "published": "2026-03-12 17:48:14+00:00",
+        "categories": [
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "RDNet: Region Proportion-Aware Dynamic Adaptive Salient Object Detection Network in Optical Remote Sensing Images",
+        "authors": [
+            "Bin Wan",
+            "Runmin Cong",
+            "Xiaofei Zhou",
+            "Hao Fang",
+            "Yaoqi Sun",
+            "Sam Kwong"
+        ],
+        "summary": "Salient object detection (SOD) in remote sensing images faces significant challenges due to large variations in object sizes, the computational cost of self-attention mechanisms, and the limitations of CNN-based extractors in capturing global context and long-range dependencies. Existing methods that rely on fixed convolution kernels often struggle to adapt to diverse object scales, leading to detail loss or irrelevant feature aggregation. To address these issues, this work aims to enhance robustness to scale variations and achieve precise object localization. We propose the Region Proportion-Aware Dynamic Adaptive Salient Object Detection Network (RDNet), which replaces the CNN backbone with the SwinTransformer for global context modeling and introduces three key modules: (1) the Dynamic Adaptive Detail-aware (DAD) module, which applies varied convolution kernels guided by object region proportions; (2) the Frequency-matching Context Enhancement (FCE) module, which enriches contextual information through wavelet interactions and attention; and (3) the Region Proportion-aware Localization (RPL) module, which employs cross-attention to highlight semantic details and integrates a Proportion Guidance (PG) block to assist the DAD module. By combining these modules, RDNet achieves robustness against scale variations and accurate localization, delivering superior detection performance compared with state-of-the-art methods.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12215v1",
+        "published": "2026-03-12 17:34:29+00:00",
+        "categories": [
+            "cs.CV",
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "WORKSWORLD: A Domain for Integrated Numeric Planning and Scheduling of Distributed Pipelined Workflows",
+        "authors": [
+            "Taylor Paul",
+            "William Regli"
+        ],
+        "summary": "This work pursues automated planning and scheduling of distributed data pipelines, or workflows. We develop a general workflow and resource graph representation that includes both data processing and sharing components with corresponding network interfaces for scheduling. Leveraging these graphs, we introduce WORKSWORLD, a new domain for numeric domain-independent planners designed for permanently scheduled workflows, like ingest pipelines. Our framework permits users to define data sources, available workflow components, and desired data destinations and formats without explicitly declaring the entire workflow graph as a goal. The planner solves a joint planning and scheduling problem, producing a plan that both builds the workflow graph and schedules its components on the resource graph. We empirically show that a state-of-the-art numeric planner running on commodity hardware with one hour of CPU time and 30GB of memory can solve linear-chain workflows of up to 14 components across eight sites.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12214v1",
+        "published": "2026-03-12 17:34:04+00:00",
+        "categories": [
+            "cs.DC",
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "Technology configurations for decarbonizing residential heat supply through district heating and implications for the electricity network",
+        "authors": [
+            "Christian Doh Dinga",
+            "Francesco Lombardi",
+            "Roald Arkesteijn",
+            "Arjan van Voorden",
+            "Sander van Rijn",
+            "Laurens James de Vries",
+            "Milos Cvetkovic"
+        ],
+        "summary": "District heating networks (DHNs) have significant potential to decarbonize residential heating and accelerate the energy transition. However, designing carbon-neutral DHNs requires balancing several objectives, including economic costs, social acceptance, long-term uncertainties, and grid-integration challenges from electrification. By combining modeling-to-generate-alternatives with power flow simulation techniques, we develop a decision-support method for designing carbon-neutral DHNs that are cost-effective, socially acceptable, robust to future risks, and impose minimal impacts on the electricity grid. Applying our method to a Dutch case, we find substantial diversity in how carbon-neutral DHNs can be designed. The flexibility in technology choice, sizing, and location enables accommodating different real-world needs and achieving high electrification levels without increasing grid loading. For instance, intelligently located heat pumps and thermal storage can limit grid stress even when renewable baseload heat sources and green-fuel boilers are scarce. Using our method, planners can explore diverse carbon-neutral DHN designs and identify the design that best balances stakeholders' preferences.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12202v1",
+        "published": "2026-03-12 17:27:21+00:00",
+        "categories": [
+            "eess.SY"
+        ]
+    },
+    {
+        "title": "Compiling Temporal Numeric Planning into Discrete PDDL+: Extended Version",
+        "authors": [
+            "Andrea Micheli",
+            "Enrico Scala",
+            "Alessandro Valentini"
+        ],
+        "summary": "Since the introduction of the PDDL+ modeling language, it was known that temporal planning with durative actions (as in PDDL 2.1) could be compiled into PDDL+. However, no practical compilation was presented in the literature ever since. We present a practical compilation from temporal planning with durative actions into PDDL+, fully capturing the semantics and only assuming the non-self-overlapping of actions. Our compilation is polynomial, retains the plan length up to a constant factor and is experimentally shown to be of practical relevance for hard temporal numeric problems.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12188v1",
+        "published": "2026-03-12 17:19:30+00:00",
+        "categories": [
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "Proof-Carrying Materials: Falsifiable Safety Certificates for Machine-Learned Interatomic Potentials",
+        "authors": [
+            "Abhinaba Basu",
+            "Pavan Chakraborty"
+        ],
+        "summary": "Machine-learned interatomic potentials (MLIPs) are deployed for high-throughput materials screening without formal reliability guarantees. We show that a single MLIP used as a stability filter misses 93% of density functional theory (DFT)-stable materials (recall 0.07) on a 25,000-material benchmark. Proof-Carrying Materials (PCM) closes this gap through three stages: adversarial falsification across compositional space, bootstrap envelope refinement with 95% confidence intervals, and Lean 4 formal certification. Auditing CHGNet, TensorNet and MACE reveals architecture-specific blind spots with near-zero pairwise error correlations (r <= 0.13; n = 5,000), confirmed by independent Quantum ESPRESSO validation (20/20 converged; median DFT/CHGNet force ratio 12x). A risk model trained on PCM-discovered features predicts failures on unseen materials (AUC-ROC = 0.938 +/- 0.004) and transfers across architectures (cross-MLIP AUC-ROC ~ 0.70; feature importance r = 0.877). In a thermoelectric screening case study, PCM-audited protocols discover 62 additional stable materials missed by single-MLIP screening - a 25% improvement in discovery yield.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12183v1",
+        "published": "2026-03-12 17:13:25+00:00",
+        "categories": [
+            "cond-mat.mtrl-sci",
+            "cs.AI",
+            "cs.LG",
+            "physics.comp-ph"
+        ]
+    },
+    {
+        "title": "Strategic Navigation or Stochastic Search? How Agents and Humans Reason Over Document Collections",
+        "authors": [
+            "\u0141ukasz Borchmann",
+            "Jordy Van Landeghem",
+            "Micha\u0142 Turski",
+            "Shreyansh Padarha",
+            "Ryan Othniel Kearns",
+            "Adam Mahdi",
+            "Niels Rogge",
+            "Cl\u00e9mentine Fourrier",
+            "Siwei Han",
+            "Huaxiu Yao",
+            "Artemis Llabr\u00e9s",
+            "Yiming Xu",
+            "Dimosthenis Karatzas",
+            "Hao Zhang",
+            "Anupam Datta"
+        ],
+        "summary": "Multimodal agents offer a promising path to automating complex document-intensive workflows. Yet, a critical question remains: do these agents demonstrate genuine strategic reasoning, or merely stochastic trial-and-error search? To address this, we introduce MADQA, a benchmark of 2,250 human-authored questions grounded in 800 heterogeneous PDF documents. Guided by Classical Test Theory, we design it to maximize discriminative power across varying levels of agentic abilities. To evaluate agentic behaviour, we introduce a novel evaluation protocol measuring the accuracy-effort trade-off. Using this framework, we show that while the best agents can match human searchers in raw accuracy, they succeed on largely different questions and rely on brute-force search to compensate for weak strategic planning. They fail to close the nearly 20% gap to oracle performance, persisting in unproductive loops. We release the dataset and evaluation harness to help facilitate the transition from brute-force retrieval to calibrated, efficient reasoning.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12180v1",
+        "published": "2026-03-12 17:11:22+00:00",
+        "categories": [
+            "cs.CL",
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "BehaviorVLM: Unified Finetuning-Free Behavioral Understanding with Vision-Language Reasoning",
+        "authors": [
+            "Jingyang Ke",
+            "Weihan Li",
+            "Amartya Pradhan",
+            "Jeffrey Markowitz",
+            "Anqi Wu"
+        ],
+        "summary": "Understanding freely moving animal behavior is central to neuroscience, where pose estimation and behavioral understanding form the foundation for linking neural activity to natural actions. Yet both tasks still depend heavily on human annotation or unstable unsupervised pipelines, limiting scalability and reproducibility. We present BehaviorVLM, a unified vision-language framework for pose estimation and behavioral understanding that requires no task-specific finetuning and minimal human labeling by guiding pretrained Vision-Language Models (VLMs) through detailed, explicit, and verifiable reasoning steps. For pose estimation, we leverage quantum-dot-grounded behavioral data and propose a multi-stage pipeline that integrates temporal, spatial, and cross-view reasoning. This design greatly reduces human annotation effort, exposes low-confidence labels through geometric checks such as reprojection error, and produces labels that can later be filtered, corrected, or used to fine-tune downstream pose models. For behavioral understanding, we propose a pipeline that integrates deep embedded clustering for over-segmented behavior discovery, VLM-based per-clip video captioning, and LLM-based reasoning to merge and semantically label behavioral segments. The behavioral pipeline can operate directly from visual information and does not require keypoints to segment behavior. Together, these components enable scalable, interpretable, and label-light analysis of multi-animal behavior.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12176v1",
+        "published": "2026-03-12 17:09:20+00:00",
+        "categories": [
+            "cs.CV",
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "A Quantitative Characterization of Forgetting in Post-Training",
+        "authors": [
+            "Krishnakumar Balasubramanian",
+            "Shiva Prasad Kasiviswanathan"
+        ],
+        "summary": "Continual post-training of generative models is widely used, yet a principled understanding of when and why forgetting occurs remains limited. We develop theoretical results under a two-mode mixture abstraction (representing old and new tasks), proposed by Chen et al. (2025) (arXiv:2510.18874), and formalize forgetting in two forms: (i) mass forgetting, where the old mixture weight collapses to zero, and (ii) old-component drift, where an already-correct old component shifts during training. For equal-covariance Gaussian modes, we prove that forward-KL objectives trained on data from the new distribution drive the old weight to zero, while reverse-KL objectives converge to the true target (thereby avoiding mass forgetting) and perturb the old mean only through overlap-gated misassignment probabilities controlled by the Bhattacharyya coefficient, yielding drift that decays exponentially with mode separation and a locally well-conditioned geometry with exponential convergence. We further quantify how replay interacts with these objectives. For forward-KL, replay must modify the training distribution to change the population optimum; for reverse-KL, replay leaves the population objective unchanged but prevents finite-batch old-mode starvation through bounded importance weighting. Finally, we analyze three recently proposed near-on-policy post-training methods, SDFT (arxiv:2601.19897), TTT-Discover (arxiv:2601.16175), and OAPL (arxiv:2602.19362), via the same lens and derive explicit conditions under which each retains old mass and exhibits overlap-controlled drift. Overall, our results show that forgetting can by precisely quantified based on the interaction between divergence direction, geometric behavioral overlap, sampling regime, and the visibility of past behavior during training.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12163v1",
+        "published": "2026-03-12 17:00:16+00:00",
+        "categories": [
+            "cs.LG",
+            "cs.AI",
+            "math.ST",
+            "stat.ML"
+        ]
+    },
+    {
+        "title": "GlyphBanana: Advancing Precise Text Rendering Through Agentic Workflows",
+        "authors": [
+            "Zexuan Yan",
+            "Jiarui Jin",
+            "Yue Ma",
+            "Shijian Wang",
+            "Jiahui Hu",
+            "Wenxiang Jiao",
+            "Yuan Lu",
+            "Linfeng Zhang"
+        ],
+        "summary": "Despite recent advances in generative models driving significant progress in text rendering, accurately generating complex text and mathematical formulas remains a formidable challenge. This difficulty primarily stems from the limited instruction-following capabilities of current models when encountering out-of-distribution prompts. To address this, we introduce GlyphBanana, alongside a corresponding benchmark specifically designed for rendering complex characters and formulas. GlyphBanana employs an agentic workflow that integrates auxiliary tools to inject glyph templates into both the latent space and attention maps, facilitating the iterative refinement of generated images. Notably, our training-free approach can be seamlessly applied to various Text-to-Image (T2I) models, achieving superior precision compared to existing baselines. Extensive experiments demonstrate the effectiveness of our proposed workflow. Associated code is publicly available at https://github.com/yuriYanZeXuan/GlyphBanana.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12155v1",
+        "published": "2026-03-12 16:53:06+00:00",
+        "categories": [
+            "cs.CV",
+            "cs.AI"
+        ]
+    },
+    {
+        "title": "Investigating student perceptions of creativity and generative ai in computational physics",
+        "authors": [
+            "Pachi Her",
+            "Patti Hamerski"
+        ],
+        "summary": "Generative Artificial Intelligence (gen-AI) is rapidly becoming more integrated into today's classrooms in all ranges of education. In higher education, Gen-AI is often seen as a resource for students, aiding them in drafting outlines, solving simple mathematical problems, or even decoding or constructing code. In this paper, we analyze essay-based interviews (N=6) from an upper-division computational physics course, in which physics majors addressed their views and attitudes towards Gen-AI and how it affects their learning. We analyzed the concepts of creativity and gen-AI using the Four C Model, a framework encompassing four types of creativity. Our analysis of the data involved coding and characterizing students' definitions of creativity and generative AI. Our findings revealed two main observations: first, students conceptualized their creativity primarily within mini-c and little-c; second, students perceived gen-AI as a resource and learning tool but expressed skepticism regarding its accuracy and creativity.",
+        "pdf_url": "https://arxiv.org/pdf/2603.12154v1",
+        "published": "2026-03-12 16:52:22+00:00",
+        "categories": [
+            "physics.ed-ph"
+        ]
+    }
+]
