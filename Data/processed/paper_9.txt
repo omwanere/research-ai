@@ -1,0 +1,1049 @@
+Portfolio of Solving Strategies in CEGAR-based
+Object Packing and Scheduling for Sequential 3D Printing
+Pavel Surynek1
+Abstract— Computing power that used to be available only
+in supercomputers decades ago especially their parallelism is
+currently available in standard personal computer CPUs even
+in CPUs for mobile telephones. We show how to effectively
+utilize the computing power of modern multi-core personal
+computer CPU to solve the complex combinatorial problem of
+object arrangement and scheduling for sequential 3D printing.
+We achieved this by parallelizing the existing CEGAR-SEQ
+algorithm that solves the sequential object arrangement and
+scheduling by expressing it as a linear arithmetic formula
+which is then solved by a technique inspired by counterexample
+guided abstraction refinement (CEGAR). The original CEGAR-
+SEQ algorithm uses an object arrangement strategy that places
+objects towards the center of the printing plate. We propose
+alternative object arrangement strategies such as placing ob-
+jects towards a corner of the printing plate and scheduling
+objects according to their height. Our parallelization is done at
+the high-level where we execute the CEGAR-SEQ algorithm in
+parallel with a portfolio of object arrangement strategies, an
+algorithm is called Porfolio-CEGAR-SEQ. Our experimental
+evaluation indicates that Porfolio-CEGAR-SEQ outperforms
+the original CEGAR-SEQ. When a batch of objects for multiple
+printing plates is scheduled, Portfolio-CEGAR-SEQ often uses
+fewer printing plates than CEGAR-SEQ.
+Keywords: 3D printing, FDM 3D printing, Cartesian 3D
+printer, sequential printing, collision avoidance, rectangle pack-
+ing, object packing, 3D packing, portfolio solver, object arrange-
+ment strategies, strategy portfolio
+I. INTRODUCTION
+Additive manufacturing, i.e. 3D printing, is an increasingly
+important alternative to traditional manufacturing processes.
+At the same time, 3D printing, due to its nature, is very close
+to robotics and to the techniques of artificial intelligence and
+combinatorial optimization that are used in robotics, since the
+3D printer itself can be viewed as a special robot [1].
+A standard Cartesian fused deposition modeling (FDM)
+3D printer creates objects on a rectangular printing plate
+(usually heated) by gradually drawing individual slices of
+printed objects, where these slices are very thin, approxi-
+mately tenths of a millimeter. Printing is performed using a
+print head with an extruder, which applies material through
+a narrow nozzle. The movement of the print head is ensured
+by a printer mechanism that allows the head to move in all
+x, y, and z coordinates.
+One of the important tasks of combinatorial optimization
+in 3D printing is the arrangement of printed objects on the
+printing plate so that the space of the place is used effectively
+[2]–[4].
+1
+Faculty
+of
+Information
+Technology,
+Czech
+Technical
+University
+in
+Prague,
+Th´akurova
+9,
+160
+00
+Praha
+6,
+Czechia
+pavel.surynek@fit.cvut.cz
+In this work, we deal with the recently introduced task of
+sequential 3D printing [6], [7], where not print all objects
+are printed slice-by-slice at once, but individual objects are
+completed one after other, while individual objects still being
+printed in the standard slice-by-slice manner. As noted in [6],
+sequential printing is particularly challenging because the ob-
+jects need to be arranged on the printing plate in such a way
+that the print head and other mechanical parts, such as the
+gantry on which the print head is mounted, avoid previously
+printed objects (see Figure 1 for illustrations). Moreover,
+sequential printing does not only mean spatial arrangement
+of objects on a printing plate, but also determining the order
+in which the objects are printed.
+Specifically, we address computational difficulty of the
+sequential printing problem by utilizing parallelism of mod-
+ern CPUs. The previous work, namely the CEGAR-SEQ
+algorithm [6], translates the problem of sequential printing to
+a linear arithmetic formula that is subsequently solved by an
+off-the-shelf solver. This approach has a significant limitation
+that the solver runs in non-parallel mode and therefore does
+not fully utilize modern multi-core CPUs. Moreover, low-
+level parallelization at the level of fine grained operations of
+the solving algorithm based on search usually does not help
+much due to its exponential complexity.
+Our approach is different, we identify parameters of the
+original CEGAR-SEQ algorithm that has a significant impact
+on its answer. Then we run CEGAR-SEQ with different
+settings of the parameters in parallel and eventually choose
+the best answer. We call the different setting of the param-
+eters a portfolio and the resulting algorithmic framework
+is called Portfolio-CEGAR-SEQ. The parameters we use to
+build the portfolio are in fact various heuristic strategies such
+as specific preference for placement of objects on the printing
+plate (the original CEGAR-SEQ optimizes placement of
+objects towards the center of the printing plate) or the
+ordering that determines selection of objects for a given
+printing plate in the case of sequential object scheduling for
+multiple printing plates.
+Sequential printing has far-reaching significance for mod-
+ern 3D printing, it can help to tackle the following chal-
+lenges:
+(i) increasing the robustness of the printing process to
+errors (in case of failure, we do not have to repeat the
+entire print, but only the unfinished objects)
+(ii) elimination of difficulties caused by frequent move-
+ments of the print head between objects (such as string-
+ing etc., can also help in increasing the printing speed)
+(iii) minimize the number of time consuming color changes
+arXiv:2603.12224v1  [cs.AI]  12 Mar 2026
+Fig. 1: Standard 3D printing slice by slice and sequential 3D printing where objects are completed one by one shown in
+Prusa Slicer [5]. The ordering of objects for sequential printing is shown by numbers. Printer extruder and gantry must
+avoid previously printed objects in the sequential case (printing of the last object is shown). The sequential arrangement and
+schedule has been obtained by the CEGAR-SEQ algorithm [6].
+during multi-color printing, where a classic example is
+printing each object in a different color.
+A. Related Work
+Abstract versions of the problem of object arrangement
+on a printing plate have been studied in literature and is
+known as object packing or object stacking [4]. Search-based
+algorithms have been developed for the related problem
+of rectangle packing [8], [9]. As shown in [10], rectangle
+packing is NP-hard, which means that object arrangement
+and scheduling for sequential printing is also NP-hard, since
+it is a more general problem.
+Genetic optimization has been used for packing 3D objects
+[11]. Various special algorithms have also been developed for
+box packing [12] or algorithms for placing smaller objects in
+concave parts of other objects [13]. The most relevant to us
+are works that translate problems, whether rectangle packing
+or 3D packing, into other formalisms, such as those for
+constraint programming (CSP) [14], linear programming LP
+[15], or satisfiability modulo theories (SMT) [16] for which
+an off-the-shelf efficient solvers exist. Rectangle packing
+using CSP is described in [17], [18] and the application of
+SMT for the same problem is shown in [19].
+B. Contribution
+We build on top of the previous formalization of the object
+arranging and scheduling problem for sequential printing as
+suggested in [6], [7], where the problem is denoted SEQ-
+PACK+S. We explicitly parametrize the previous CEGAR-
+SEQ with object arrangement and object ordering strategies
+that we call a composite strategy - the resulting framework is
+called Portfolio-CEGAR-SEQ. We also suggest several ob-
+ject orderings and arrangement strategies that are combined
+together (similarly as a Cartesian product) to form up to 20
+composite strategies, a rich portfolio but still manageable by
+a contemporary CPU. Parallel processing of the portfolio on
+modern CPUs does not add any significant runtime increase
+but often leads to better solutions in multiple printing plate
+setting than the original CEGAR-SEQ. Often Portfolio-
+CEGAR-SEQ is able to sequentially arrange and schedule
+a large batch of objects on fewer printing plates as shown in
+our experiments that represents a significant advantage for a
+printer operator.
+II. BACKGROUND
+The problem of 3D sequential object arrangement and
+scheduling (inspired by the terminology for rectangle pack-
+aging, we will rather call the problem “object packing
+and scheduling” and denote SEQ-PACK+S) is a task of
+determining the positions and order of 3D objects so that the
+objects can be printed by the 3D printer in a determined order
+at the determined positions sequentially, one after the other.
+Unlike standard 3D printing, where all objects are printed
+at once in individual slices, in sequential printing, objects
+are completed individually. That is, when the next object is
+printed, the previously printed objects are still present on
+the printing plate. It is therefore necessary to ensure that the
+print head and other mechanical parts of the 3D printer do
+not collide with previously printed objects when printing the
+next object.
+While determining the printing order of objects to print is
+a discrete problem, determining object positions is inherently
+a continuous problem, which presents specific challenges.
+Let R3 be a three dimensional Euclidean space, a finite
+set of objects O = {O1, O2, ..., Ok}, where each object Oi
+is a connected set {(xi, yi, zi) ∈Oi} ⊆R3, in addition to
+this, there is an extruder object E, {(xe, ye, ze) ∈E} ⊆
+R3 that represents a moving part of the printer that prints
+objects. On a real Cartesian 3D printer, the extruder object
+is represented by the extruder, print head, gantry, cables,
+and other moving parts. All objects including the extruder
+are expressed in the same coordinate system. We assume
+that the extruder does not change shape during its motion.
+For simplicity, we abstract from bending of cables in this
+mathematical model. However, the model can be further
+generalized to take this into account. Moving extruder E
+means to translate E to some position (xt, yt, zt) ∈R3 at
+time t ∈R. Hence extruder appears as a translated object
+{(xe + xt, ye + yt, ze + zt) | (xe, ye, ze) ∈E}} at time t.
+We can assume that (xt, yt, zt) changes smoothly as with
+real 3D printers happens but it is not important for further
+definitions.
+We can mathematically model the plate as a subset of
+a plane perpendicular to the z-axis. Typically, the plate is
+rectangular, sometimes circular, exceptionally of a different
+shape. Mathematically, the plate will be a subset of 2D plane,
+PP ⊆R2. The extruder moves above the plate using printer
+mechanics. Any point relatively above the printing plate PP
+up to certain height is accessible by the extruder which
+together defines a printing volume V ⊆R3.
+For simplicity, we will assume that all objects to be
+printed will fit into the printing volume V, and we will also
+assume that the extruder can move slightly above the printing
+volume, which eliminates the need to worry about the height
+of objects in further definitions.
+Common 3D printer mechanics such as Cartesian (bed-
+slinger) or CoreXY are covered by our definitions.
+From the mathematical point of view, we can look at
+printing an object in such a way that it is necessary to create
+every point of the printed object, that is, to touch every point
+of the printed object with the extruder, or more precisely,
+with a selected point of the extruder, in our case the point
+(0,0,0) of the extruder. The point (0,0,0) of the extruder will
+correspond to the nozzle opening.
+The extruder must therefore move to each point of the
+printed object. Once a point is printed, we must take into
+account its presence for future movements of the extruder,
+that is, the extruder must not collide with the point in the
+future. Mathematically, the printed point must never appear
+inside the translated extruder.
+In standard printing, we assume that we place objects
+on the plate and print them according to the increasing z-
+coordinate in slices. Assuming that the z-coordinates of the
+extruder are non-negative except for the point (0,0,0) (which
+also corresponds to a real 3D printer), there is no risk of
+collision with any already printed part. However, this is
+no longer case in sequential 3D printing, when individual
+objects are completed one after other.
+In the case of sequential printing, we want to determine
+the positions of the objects and their temporal ordering,
+so that when printing objects sequentially in this specified
+order, there is never a collision between the extruder and
+a previously printed object. We will call this requirement
+a sequential non-colliding requirement. Next, we need to
+ensure that all objects are placed on the printing plate, we
+will call this requirement the printing plate requirement (no
+part of an object extends beyond the printing plate) 1. And
+finally, we need to ensure that the extruder can be lifted
+vertically up and moved to print the next object, i.e. the
+extruder can be lowered back to the printing plate for printing
+the next object. We can simplify the last requirement slightly
+by requiring the extruder to be able to move freely vertically
+upwards from any top point of the object being printed.
+This allows both for initial accessing the volume for printing
+the object as well as leaving the object volume. We will
+call this requirement an extruder traversability requirement.
+Other variations of this requirement are also possible, and
+the method we developed is general enough to work with
+such generalizations.
+Formally, we need to determine for each object Oi ∈O
+1Equivalently, the printing plate requirement can be expressed by the
+requirement that all objects are placed within the printing volume V . The
+way of expression we have chosen corresponds better with the proposed
+solution technique.
+its position on the plate (Xi, Yi, Zi) ∈R3 (Zi is deter-
+mined by placing object vertically on the surface of the
+plate) and the order of the objects, i.e. the permutation
+π : {1, 2, ..., k} →{1, 2, ..., k}, such that the sequential non-
+colliding requirement, the printing plate requirement hold,
+and extruder traversability hold.
+We introduce object transforming functions: P : 2R3 →
+2R3, a function that places object onto the plate, E : 2R3 →
+2R3, a function that makes an extruder envelope of a given
+object. In addition to this, let ()xy : 2R3 →2R2 be a
+projection of the given object onto the printing plate, and
+()⊤: 2R3 →2R3 be an extended top of the printed object
+defined as follows:
+• P(Oi) = {(xi + Xi, yi + Yi, zi + Zi) |
+(xi, yi, zi) ∈Oi}
+• E(Oi) = {(xi + xe, yi + ye, zi + ze) |
+(xi, yi, zi) ∈Oi ∧(xe, ye, ze) ∈E}
+• Oxy
+i
+= {(x, y) | (x, y, z) ∈Oi}
+• Oi
+⊤= {(x, y, z) | z ≥maxz ∧(x, y, maxz) ∈Oi}
+where maxz = max{z | (x, y, z) ∈Oi}
+Let us note that E(P(Oi)) and E(Oi) are equivalent to the
+Minkowski sum of P(Oi) and the extruder E and Oi and
+the extruder E respectively.
+The sequential non-colliding requirement can be ex-
+pressed as follows:
+(∀i, j = 1, 2, ..., k)(π(i) < π(j) ⇒P(Oi) ∩E(P(Oj)) = ∅)
+(1)
+Placement objects within the printing plate, i.e. the print-
+ing plate requirement can be expressed as follows:
+(∀i = 1, 2, ..., k)(P(Oi)xy ⊆PP )
+(2)
+The extruder traversability requirement can be expressed
+as follows:
+(∀i, j = 1, 2, ..., k)(π(i) < π(j) ⇒P(Oi) ∩P(Oj)⊤= ∅)
+(3)
+Optimality in SEQ-PACK+S. The problem of object
+packing for sequential printing is a decision problem in its
+basic variant. Various notions of optimality in SEQ-PACK+S
+can be adopted.
+The printing plate of a real 3D printer is usually heated
+to achieve adhesion of objects to the plate, with the most
+uniform heating towards the center of the plate, while
+irregularities in heating increase towards the edges of the
+plate. Given these physical properties, it is advantageous to
+place printed objects towards the center of the printing plate.
+This preference has been taken into account in the design
+of the objective in the original CEGAR-SEQ algorithm. Let
+CP ∈R2 be a center of PP .
+Intuitively, we will try to shrink PP around CP so that
+placement of object satisfying the sequential printability
+requirements is still possible. Formally, let CP = (xc, yc)
+and σPP = {(xc+σ(x−xc), yc+σ(y−yc)) | (x, y) ∈PP }.
+The printing plate requirement can be modified accordingly:
+(∀i = 1, 2, ..., k)(P(Oi)xy ⊆σPP )
+(4)
+We will define the optimization variant of SEQ-PACK+S
+as finding σ ∈(0, 1] that is as small as possible and
+requirements 1, 3, and 4 are satisfied.
+III. A LINEAR ARITHMETIC MODEL
+Let Xi, Yi ∈R be decision variables determining the
+position of object Oi and let Ti ∈R be decision variables de-
+termining the time at which respective objects Oi are printed.
+Ti variables will be used to determine the permutation π of
+objects for sequential printing.
+A linear arithmetic formula that expresses the SEQ-
+PACK+S problem over Xi, Yi and Ti is constructed. For sim-
+plicity we recall here only important blocks of constraints,
+for details of the formula we refer the reader to [6].
+Let
+PA
+=
+(A1, A2, ...Aα)
+⊆
+R2
+and
+PB
+=
+(B1, B2, ..., Bβ) ⊆R2 are two polygons. A constraint
+Points-outside-Polygon or PoP(XA, YA, PA, XB, YB, PB)
+requires that vertices of PA placed at position XA, YA are
+outside of PB placed at position XA, XB. This constraint is
+relatively easy to express, however is not sufficient to express
+the requirement that polygons do not overlap.
+To
+ensure
+non-overlapping
+between
+polygons
+a
+Lines-not-Intersect
+or
+LnI (XA, YA, Ai, A(i mod k)+1,
+XB, YB, Bj, B(j mod l)+1)
+constraint
+is
+needed.
+The
+constraint ensures that the i-th edge of polygon A placed
+at position XA, YA does not intersect with the j-th edge of
+polygon B placed at position XB, YB. Since this constraint
+is harder to express, the CEGAR-SEQ algorithm does not
+add these constraints from the beginning. These constraints
+are rather treated in the counterexample guided abstraction
+refinement style (CEGAR) [20], [21]. Briefly said, the LnI
+constraint is added only after if it is violated. As shown
+in [6] the CEGAR-style constraint refinement is a key to
+efficiency of the CEGAR-SEQ algorithm.
+For expressing the requirement that a polygon lies in-
+side the printing plate a constraint Polygon-inside-Polygon
+or PiP(XA, YA, PA, XB, YB, PB) is used. The constraint
+expresses that vertices of PA placed at position XA, YA are
+inside PB placed at position XB, YB.
+The CEGAR-SEQ algorithm for solving an instance of
+the approximation of SEQ-PACK+S as a linear arithmetic
+formula by a CEGAR-inspired approach is shown using
+pseudo-code as Algorithm 1. The pseudo-code shows a
+variant of the algorithm that is parametrized by a composite
+strategy. Let us briefly recall that the algorithm introduces
+the constraints into a formula F that is subsequently solved
+by an SMT solver. For details on the CEGAR-SEQ algorithm
+we refer the reader to [6].
+IV. A PORTFOLIO OF SCHEDULING STRATEGIES
+The original CEGAR-SEQ algorithm uses an object ar-
+rangement strategy that places objects towards the center
+of the printing plate. This is justified by the fact that
+heat distribution over the printing plate is more regular
+towards its center (see Figure 2 - left). However modern
+3D printers are often enclosed and advancements in the
+design of heated beds eliminate irregularities in the heat
+distribution. Therefore it starts to be worthwhile to consider
+different object arrangement and scheduling strategies such
+as arranging objects towards a corner of the printing plate
+(see Figure 2 - right).
+In addition to object arrangement strategies it may be
+beneficial to consider various object orderings in the con-
+text of sequential arranging and scheduling objects across
+multiple printing plates. Object ordering determines which
+objects will be arranged and scheduled for the first plate,
+which objects will go to the second plate, etc. More precisely,
+given object ordering, the algorithm will try to arrange and
+schedule the first k objects according to the ordering for the
+first printing plate where k is as large as possible.
+We denote spatial object arrangement strategy on plate as
+tactic and object ordering simply as ordering. A composite
+strategy denoted as STRATEGY for short consists of:
+• an object arrangement strategy, that is a tactic, denoted
+STRATEGY .Tactic and
+• an object ordering, denoted STRATEGY .Ordering.
+The original CEGAR-SEQ algorithm has been modified
+so that it takes the composite strategy STRATEGY as its
+input. The modified CEGAR-SEQ combines a tactic and an
+ordering from the given composite strategy for selection of
+objects for arrangement on the plate and for the way in which
+objects are arranged on the plate.
+The following tactics are used to compose composite
+strategies, the set denoted Tactics:
+• Center - objects are arranged towards the center of the
+plate (see Figure 2 - left)
+• Max-X-Min-Y - object are arranged towards the max-
+imum x and the minimum y coordinates of the plate
+(see Figure 2 - right)
+• Min-X-Max-Y, Min-X-Min-Y, and Max-X-Max-Y -
+with analogous meaning
+The abstract model of a given tactic is carried out via
+a function STRATEGY .Tactic(σ, PP ) that for a given
+σ ∈(0, 1] and a printing plate PP returns the printing plate
+scaled down by a factor of σ while the resulting printing
+plate denoted σPP is shaped according to the given tactic
+(towards the center or towards a corner, etc.).
+The
+abstract
+model
+of
+an
+ordering
+is
+for
+simplicity carried out by a non-deterministic function
+STRATEGY .Ordering(O) that for a given (finite) set of
+objects O returns a subset of objects {O1, O2, ..., Ok} ⊆O
+that fits with respect to sequential printing onto the plate,
+moreover k is as large as possible, that is, the next object
+Ok+1 with respect to the ordering does not fit on the
+plate (objects {O1, O2, ..., Ok+1} cannot be arranged and
+scheduled sequentially on the plate). The abovementioned
+non-determinism allows for easy guessing of k 2.
+Suggested object orderings is based on expert knowledge
+that the height of the object is a decisive property for
+sequential printing. Therefore suggested object orderings
+2Without the help of non-determinism we would have to add another
+optimization loop to the algorithm for finding optimal k which would make
+the algorithms’ pseudo-code too complicated.
+Algorithm 1: CEGAR-SEQ [6] parameterized by
+a composite strategy: sequential object packing by
+a CEGAR-based algorithm where a given strategy
+determines object ordering and object arrangement
+tactic.
+1 Solve-CEGAR-SEQ(PP , O, STRATEGY )
+2
+Decision ←[]
+3
+while O ̸= ∅do
+4
+{O1, O2, ..., Ok} ←STRATEGY .Ordering(O)
+5
+(X1, Y1, T1), ..., (Xk, Yk, Tk)) ←
+((⊥, ⊥, ⊥), ..., (⊥, ⊥, ⊥))
+6
+F ←[]
+7
+for each i, j ∈{1, 2, ..., k} ∧i ̸= j do
+8
+F ←F ∪{Ti + ϵT < Tj ∨Tj + ϵT < Ti}
+9
+F ←F ∪{Ti < Tj ⇒
+(PoP(Xi, Yi, C(Oxy
+i ), Xj, Yj, C(E(Oj)xy)) ∧
+PoP(Xj, Yj, C(E(Oj)xy), Xi, Yi, C(Oxy
+i )))}
+10
+σ0 ←0
+11
+σ+ ←1
+12
+while σ+ −σ0 > ϵXY do
+13
+σ ←(σ+ + σ0)/2
+14
+σPP ←STRATEGY .Tactic(PP , σ)
+15
+answer ←Solve-CEGAR-SEQ-Bounded
+(F, σPP , {O1, O2, ..., Ok})
+16
+if answer ̸= UNSAT then
+17
+let (((X1, Y1, T1), ...,
+18
+(Xk, Yk, Tk)), F) = answer
+19
+σ+ ←σ
+20
+else
+21
+σ0 ←σ
+22
+O ←O \ {O1, O2, ..., Ok}
+23
+Decision ←Decision.((X1, Y1), ..., (Xk, Yk))
+24
+return Decision
+25 Solve-CEGAR-SEQ-Bounded(F, σPP , {O1, O2, ..., Ok})
+26
+Φ ←[]
+27
+for each i ∈{1, 2, ..., k} do
+28
+Φ ←Φ ∪{PiP(Xi, Yi, C(Oxy
+i ), 0, 0, σPP )}
+29
+while TRUE do
+30
+answer ←Solve-SMT(F, Φ)
+31
+if answer ̸= UNSAT then
+32
+let ((X1, Y1, T1), ..., (Xk, Yk, Tk)) = answer
+33
+for each i, j ∈{1, 2, ..., k} ∧i ̸= j do
+34
+let (A1, A2, ..., Aα) = C(Oxy
+i )
+35
+let (B1, B2, ..., Bβ) = E(C(Oxy
+j ))
+36
+refined ←FALSE
+37
+for each a ∈{1, 2, ..., α} do
+38
+for each b ∈{1, 2, ..., β} do
+39
+if Ti < Tj∧
+Lines-Intersect(Xi, Yi, Aa,
+40
+A(a mod α)+1, Xj, Yj, Bb, B(b mod β)+1)
+then
+41
+F ←F ∪{Ti < Tj ⇒
+LnI (Xi, Yi, Aa, A(a mod α)+1,
+42
+Xj, Yj, Bb, B(b mod β)+1)}
+43
+refined ←TRUE
+44
+if ¬refined then
+45
+return
+(((X1, Y1, T1), ..., (Xk, Yk, Tk)), F)
+46
+else
+47
+return UNSAT
+sorts objects according to their height. The following object
+orderings are used to compose composite strategies, the set
+Algorithm 2: Portfolio-CEGAR-SEQ: A portfolio-
+based high level extension of the CEGAR-SEQ algo-
+rithm - object ordering and arrangement tactics are
+combined. For loops at line 7 and 8 are expected to
+be implemented in parallel.
+1 Portfolio-CEGAR-SEQ(PP , O)
+2
+Orderings ←{Height-Min-to-Max,
+3
+Height-Max-to-Min, Height-Random}
+4
+Tactics ←{Center, Min-X -Min-Y , Max-X -Min-Y ,
+5
+Min-X -Max-Y , Max-X -Max-Y }
+6
+Answers ←∅
+7
+for ordering ∈Orderings do
+8
+for tactic ∈Tactics do
+9
+STRATEGY .Ordering←ordering
+10
+STRATEGY .Tactic←tactic
+11
+answer ←
+Solve-CEGAR-SEQ(PP , O, STRATEGY )
+12
+Answers ←Answers ∪{answer}
+13
+best-answer ←Select-Best-Schedule(Answers)
+14
+return best-answer
+denoted Orderings:
+• Height-Min-to-Max - objects are ordered according to
+their height from the shortest one to the tallest one
+• Height-Max-to-Min - objects are ordered according to
+their height from the tallest one to the shortest one
+• Height-Random - objects are ordered randomly
+• Height-Input - objects are taken in the same order as
+they come in the input
+Altogether the basic portfolio of the for the modified
+CEGAR-SEQ algorithm consists of |Tactics × Orderings|
+composite strategies.
+3. The pseudo-code of Portfolio-
+CEGAR-SEQ is shown as Algorithm 2.
+PP 
+σPP 
+PP 
+σPP 
+Fig. 2: Object arrangement strategies (tactics): (i) objects are
+placed towards the center of the printing plate PP (Center
+tactic), (ii) objects are placed towards the maximum x and
+minimum y coordinates w.r.t. PP (Max-X-Min-Y tactic).
+V. EXPERIMENTAL EVALUATION
+CEGAR-SEQ [6] has been written in C++ and integrated
+as part of Prusa Slicer 2.9.1 [5], an open-source slicing
+software for 3D printers. Portfolio-CEGAR-SEQ has been
+written in C++ as well but currently it is not integrated within
+the publicly available slicing software.
+Portfolio-CEGAR-SEQ shares with the previous CEGAR-
+SEQ the internal usage of the Z3 Theorem Prover [22],
+3Concretely it is 5 × 4 = 20 which is adequate for parallel processing
+by a multi-core CPU of a contemporary personal computer.
+ 
+0
+0,2
+0,4
+0,6
+0,8
+1
+0
+4
+8
+12
+16
+20
+24
+28
+32
+Success rate
+Number of objects
+Success rate | rnd. boxes | 200x200
+Gecode
+Z3
+ 
+0,001
+0,01
+0,1
+1
+10
+100
+0
+200
+400
+600
+800
+1000
+1200
+1400
+1600
+1800
+2000
+2200
+2400
+Runtime (seconds)
+Instance
+Sorted runtimes | rnd. boxes | 200x200
+Gecode
+Z3
+Fig. 3: Comparison of solving SEQ-PACK+S by the Gecode solver and the z3 solver on random cuboids on a 200mm ×
+200mm plate. The right part shows cactus plots of runtimes (lower plot is better).
+ 
+0
+60
+120
+180
+240
+300
+360
+420
+480
+540
+0
+400
+800
+1200
+1600
+2000
+2400
+2800
+3200
+3600
+4000
+4400
+4800
+5200
+5600
+6000
+Runtime (seconds)
+Instance
+Sorted runtimes|printer parts|250x210
+Tactic
+Ordering
+Combined
+Center
+Fig. 4: Sorted runtimes of Portfolio-CEGAR-SEQ with var-
+ious portfolios on printer parts.
+an SMT solver, that has been used for solving the linear
+arithmetic model. We have performed extensive testing of
+both the CEGAR-SEQ algorithm and Portfolio-CEGAR-
+SEQ and present some of the results in this section. All
+experiments were performed on a system with CPU AMD
+Ryzen 7 2700 3.2GHz, 32GB RAM, running Kubuntu Linux
+24.
+All
+source
+code
+and
+experimental
+data
+presented
+in
+this
+paper
+are
+available
+in
+github.com/{double-blind}/cegar-seq
+repository to support reproducibility of results.
+A. Comparison of Underlying Solvers
+Since there is currently no comparable other comparable
+solver for sequential printing other than CEGAR-SEQ and
+Portfolio-CEGAR-SEQ, we decided to conduct a competitive
+comparison at least at the solver level.
+We compared solving of the SEQ-PACK+S problem with
+the Z3 solver and with the Gecode solver [23], which is a
+CSP solver. Hence we compared solving SEQ-PACK+S in
+two different paradigms, SMT and CSP.
+The experimental setup consisted of a printing plate of size
+200 × 200 4 and random cuboids whose length, width and
+4Sizes can be assumed in mm that corresponds to a real 3D printer.
+height were integer and chosen randomly from a uniform
+distribution in the interval [8,64], the number of cuboids
+ranges from 1 to 32. For each number of cuboids, 100
+random instances were generated. The timeout was set to
+one minute. This experiment reproduces the experiment from
+[6] but adds more measurements per data point (100 vs. 10
+in the original experiment) and provides greater timeout (60
+seconds vs. 8 seconds in the original experiment).
+The solvers in this test were set to an optimal mode which
+means that all objects were scheduled at once into a as small
+as possible rectangle placed around the center of the printing
+plate.
+Results are shown in Figure 3 which shows a clear dom-
+inance of the SMT paradigm represented by the Z3 solver.
+Additionally, we note that the linear arithmetic formula
+uses variables with a rational domain in contrast to finite
+domain of Gecode with millimeter resolution, so the resulting
+solution from the Z3 solver is more accurate.
+In the optimal mode, there is a certain limit for the number
+of objects the solvers are able to solve within the given
+timeout of 60 seconds. Results indicate that scheduling more
+than 25 cuboids is virtually unsolvable for the Gecode solver;
+this limit is approximately 30 cuboids for the Z3 solver.
+We also performed runtime comparison between various
+variants of the Portfolio-CEGAR-SEQ solver and the original
+CEGAR-SEQ. We used 4 setups of composite strategies:
+• Center - corresponds to the original CEGAR-SEQ
+with a single Center tactic combined with Height-Input
+object ordering
+• Ordering - consists of four object orderings Height-
+Min-to-Max, Height-Max-to-Min, Height-Random, and
+Height-Input combined with the Center tactic
+• Tactic - consists of five tactics Center, Min-X-Min-
+Y, Max-X-Min-Y, Min-X-Max-Y, and Max-X-Max-Y
+cobined with Height-Input object ordering
+• Combined - consists of all object orderings and tactics
+from previous two composite strategies that altogether
+form 20 composite strategies
+This experiment has a different setup. As a testing case we
+use sequential 3D printing of complex objects - 3D printable
+ 
+1
+2
+3
+0
+2
+4
+6
+8
+Avearte number of plates
+Number of objects
+Average number of plates
+printer parts | 250 x 210
+Center
+Ordering
+Tactic
+Combined
+ 
+0
+4
+8
+12
+16
+20
+0
+4
+8
+12 16 20 24 28 32 36 40 44 48 52
+Avearte number of plates
+Number of objects
+Average number of plates
+printer parts | 250 x 210
+Center
+Ordering
+Tactic
+Combined
+Fig. 5: Average number of printing plates used by a sub-optimal variant of Portfolio-CEGAR-SEQ under four different
+portfolios of composite strategies.
+parts for a 3D printer 5, the benchmark consists of 34 diverse
+objects. Similar setup has been used in [6].
+We tried to solve SEQ-PACK+S for the increasing number
+of objects ranging from 1 up to 64. For each number of
+objects we selected random objects from the benchmark
+set (objects can be repeated), 100 instances per number of
+objects were solved.
+Portfolio-CEGAR-SEQ has been set to a sub-optimal
+mode in this experiment. This is achieved through the
+STRATEGY .Ordering that returns at most k objects that
+are arranged and scheduled with respect to previously ar-
+ranged and scheduled objects. Each time given k objects are
+scheduled optimally. Since objects are scheduled in groups
+of k the algorithm cannot reach global optimum, but the
+advantage is that it is much faster. Parameter k was set
+to 4 in this experiment. In addition to this, solving takes
+place across multiple printing plates - if objects do not fit
+onto a plate then remaining objects are scheduled on a fresh
+printing plate. STRATEGY .Ordering is assumed to non-
+deterministically guess and return the remaining number of
+objects for the plate if it less than k.
+Portfolio-CEGAR-SEQ in the sub-optimal mode cannot
+normally fail to arrange and schedule even many objects as
+it can use multiple printing plates if needed while only a
+bounded number of objects is arranged and scheduled on
+a single plate. Runtime results are shown in Figure 4. The
+algorithm has been run in parallel for all composite strategies
+in a given setup and finished after object arranging and
+scheduling has been finished for all the composite strategies
+(the best solution is eventually returned).
+Results clearly indicate that adding more composite strate-
+gies increases wall-clock runtime up to multiple times.
+However, even for 20 composite strategies the increase factor
+in wall-clock runtime is acceptable.
+B. Benefit of Portfolio
+The main benefit of portfolio-based solver for sequential
+printing is to produce better solutions in the sub-optimal
+5The benchmark consists of 3D printable parts for the Original Prusa
+MK3S printer.
+ 
+0
+0,1
+0,2
+0,3
+0,4
+0,5
+0,6
+0,7
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+Ratio per plate
+Histogram | Objects per plate
+Central
+Ordering
+Tactic
+Combined
+Fig. 6: Histogram of the number of plates used by a sub-
+optimal variant of Portfolio-CEGAR-SEQ under four differ-
+ent portfolios of composite strategies.
+setting. The quality of solutions can be measured by the
+number of printing plates being used. For example fitting
+objects onto 1 plate instead of 2 represents a significant
+practical difference for the operator of the printer.
+To evaluate the benefit of using Portfolio-CEGAR-SEQ,
+we measured the number of printing plates used for arrang-
+ing and scheduling by the previous CEGAR-SEQ and and
+the new Portfolio-CEGAR-SEQ in their sub-optimal setup
+(groups of objects of size 4 are scheduled at once). Results
+are shown in Figure 5. For a small number of objects, the
+richer the portfolio is, the fewer number of plates are being
+used. A printing plate is often saved, which for a small batch
+of objects to print represents a significant difference. The
+best results can be achieved by the Combined portfolio.
+The Ordering and the Tactic composite strategies exhibit an
+orthogonal behavior when their synergy comes to an effect
+in the Combined composite strategies. The Tactic component
+brings a greater benefit according to experiments.
+As the number of objects grows the benefit of the Com-
+bined composite strategies is diminishing with respect to
+the second best Tactic composite strategies. Nevertheless,
+the benefit of Portfolio-CEGAR-SEQ is still significant with
+respect to the original CEGAR-SEQ - significantly fewer
+Fig. 7: The benefit of portfolio-based sequential print scheduling for 30 pieces of printer parts - left: the standard parallel
+printing. Middle: objects scheduled sequentially by the previous CEGAR-SEQ (7 plates used). Right: objects scheduled
+sequentially by Portfolio-CEGAR-SEQ (6 plates used).
+printing plates are often used for scheduling.
+The histogram of the number of per printing plate is shown
+in Figure 6. Results indicate that more complex composite
+strategies tend to place more objects onto the printing
+plate. The original CEGAR-SEQ and Ordering composite
+strategies tend to place k objects onto printing plate in
+many cases, that is the same number of objects as returned
+by STRATEGY .Ordering. The more complex composite
+strategies tend to go beyond k objects per printing plate.
+VI. CONCLUSION
+We proposed an extension of CEGAR-SEQ [6], an existing
+algorithm for sequential object arrangement and schedul-
+ing, with a portfolio of object ordering and arrangement
+strategies. Our new algorithm Portfolio-CEGAR-SEQ runs
+instances of CEGAR-SEQ with various strategies in parallel
+and eventually chooses the best solution according to the
+given objective found by one of the parallel instances. The
+number of printing plates being used for sequential printing
+of a large batch of objects turned out to be a useful objective.
+Portfolio-CEGAR-SEQ has been shown to generate better
+solutions in terms of the number of printing plates being
+used - Portfolio-CEGAR-SEQ often uses fewer printing
+plates which represents a significant advantage of the printer
+operator. Moreover, it turned out that object ordering and
+arrangement strategies have an orthogonal effect to some
+extent, that is, they can be combined to achieve a synergistic
+effect as shown in our experiments.
+For future work, we want to deal with the possibility
+of rotating objects directly in the formal model. An open
+question is also how to integrate heuristics for increasing
+performance - one option seems to be initialization of the
+solver with a heuristically found solution.
+REFERENCES
+[1] W. Gao, Y. Zhang, D. Ramanujan, K. Ramani, Y. Chen, C. B.
+Williams, C. C. L. Wang, Y. C. Shin, S. Zhang, and P. D. Zavattieri,
+“The status, challenges, and future of additive manufacturing in
+engineering,” Comput. Aided Des., vol. 69, pp. 65–89, 2015.
+[2] S. Wu, M. Kay, R. King, A. Vila-parrish, and D. Warsing, “Multi-
+objective optimization of 3d packing problem in additive manufac-
+turing,” IIE Annual Conference and Expo 2014, pp. 1485–1494, 01
+2014.
+[3] S. Edelkamp and P. Wichern, “Packing irregular-shaped objects for
+3d printing,” in KI 2015: Advances in Artificial Intelligence - 38th
+Annual German Conference on AI, Proceedings, ser. LNCS, vol. 9324.
+Springer, 2015, pp. 45–58.
+[4] L. Cao, L. Tian, H. Peng, Y. Zhou, and L. Lu, “Constrained stacking
+in DLP 3d printing,” Comput. Graph., vol. 95, pp. 60–68, 2021.
+[5] The Prusa Slicer Team, “Prusa slicer 2.9.1,” 2025, available from
+https://github.com/prusa3d/PrusaSlicer.
+[6] P. Surynek, V. Bubnik, L. Matena, and P. Kubis, “Object packing and
+scheduling for sequential 3d printing: a linear arithmetic model and a
+cegar-inspired optimal solver,” in IEEE/RSJ International Conference
+on Intelligent Robots and Systems, IROS 2025.
+IEEE, 2025, pp.
+5679–5686.
+[7] ——, “A linear arithmetic model reflecting vertical object details in
+object packing and scheduling for sequential 3d printing,” in 21st IEEE
+International Conference on Automation Science and Engineering,
+CASE 2025.
+IEEE, 2025, pp. 1094–1100.
+[8] E. Huang and R. E. Korf, “Optimal packing of high-precision rectan-
+gles,” in Proceedings of the Fourth Annual Symposium on Combina-
+torial Search, SOCS 2011.
+AAAI Press, 2011, pp. 195–196.
+[9] ——, “Optimal rectangle packing: An absolute placement approach,”
+J. Artif. Intell. Res., vol. 46, pp. 47–87, 2013.
+[10] R. E. Korf, “Optimal rectangle packing: Initial results,” in Proceedings
+of the 13th International Conference on Automated Planning and
+Scheduling (ICAPS 2003).
+AAAI, 2003, pp. 287–295.
+[11] I. Ikonen, W. E. Biles, A. Kumar, J. C. Wissel, and R. K. Ragade, “A
+genetic algorithm for packing three-dimensional non-convex objects
+having cavities and holes,” in International Conference on Genetic
+Algorithms, 1997.
+[12] A. Lim and W. Ying, “A new method for the three dimensional
+container packing problem,” in Proceedings of the 17th International
+Joint Conference on Artificial Intelligence, IJCAI 2001.
+Morgan
+Kaufmann, 2001, pp. 342–350.
+[13] J. Egeblad, B. K. Nielsen, and A. Odgaard, “Fast neighborhood search
+for two- and three-dimensional nesting problems,” Eur. J. Oper. Res.,
+vol. 183, no. 3, pp. 1249–1266, 2007.
+[14] R. Dechter, Constraint Processing. Elsevier Morgan Kaufmann, 2003.
+[15] D. Rader, Deterministic Operations Research: Models and Methods
+in Linear Optimization.
+Wiley, 2010.
+[16] C. W. Barrett and C. Tinelli, “Satisfiability modulo theories,” in
+Handbook of Model Checking.
+Springer, 2018, pp. 305–343.
+[17] M. D. Moffitt and M. E. Pollack, “Optimal rectangle packing: A meta-
+csp approach,” in Proceedings of the 16th International Conference on
+Automated Planning and Scheduling, ICAPS 2006.
+AAAI, 2006, pp.
+93–102.
+[18] R. E. Korf, M. D. Moffitt, and M. E. Pollack, “Optimal rectangle
+packing,” Ann. Oper. Res., vol. 179, no. 1, pp. 261–295, 2010.
+[19] T. Nikken, “Satisfiability modulo theories based packing of scalable
+rectangles for real-time layout generation,” Master Thesis, Radboud
+University Nijmegen, pp. 1–53, 2020.
+[20] E.
+M.
+Clarke,
+O.
+Grumberg,
+S.
+Jha,
+Y.
+Lu,
+and
+H.
+Veith,
+“Counterexample-guided abstraction refinement,” in Computer Aided
+Verification, 12th International Conference, CAV 2000, Proceedings,
+ser. LNCS, vol. 1855.
+Springer, 2000, pp. 154–169.
+[21] ——, “Counterexample-guided abstraction refinement for symbolic
+model checking,” J. ACM, vol. 50, no. 5, pp. 752–794, 2003.
+[22] L. De Moura and N. Bjørner, “Z3: an efficient smt solver,” in
+Proceedings of the Theory and Practice of Software, 14th International
+Conference on Tools and Algorithms for the Construction and Analysis
+of Systems.
+Springer-Verlag, 2008, p. 337–340.
+[23] The Gecode Team, “Gecode: Generic constraint development environ-
+ment,” 2006, available from http://www.gecode.org.

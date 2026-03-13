@@ -1,0 +1,4860 @@
+Technology configurations for decarbonizing residential heat supply through district
+1
+heating and implications for the electricity network
+2
+Christian Doh Dinga1,6,*, , Francesco Lombardi2, , Roald Arkesteijn3, Arjan van Voorden4,
+3
+Sander van Rijn5, , Laurens J. de Vries2, , and Milos Cvetkovic1,
+4
+1Department of Electrical Sustainable Energy, Delft University of Technology, 2628 CD, Delft,
+5
+the Netherlands
+6
+2Department of Engineering Systems and Services, Delft University of Technology, 2600 GA,
+7
+Delft, the Netherlands
+8
+3Eneco, District Heating Network Operator, 3068 AV, Rotterdam, The Netherlands
+9
+4Stedin, Electricity Distribution Network Operator, 3011 TA, Rotterdam, The Netherlands
+10
+5Environment and Sustainability Section, Netherlands eScience Center, 1098 XH, Amsterdam,
+11
+the Netherlands
+12
+6Lead contact
+13
+*Correspondence: c.dohdinga@tudelft.nl
+14
+SUMMARY
+15
+District heating networks (DHNs) have significant potential to decarbonize residential heating
+16
+and accelerate the energy transition. However, designing carbon-neutral DHNs requires bal-
+17
+ancing several objectives, including economic costs, social acceptance, long-term uncertain-
+18
+ties, and grid-integration challenges from electrification. By combining modeling-to-generate-
+19
+alternatives with power flow simulation techniques, we develop a decision-support method for
+20
+designing carbon-neutral DHNs that are cost-effective, socially acceptable, robust to future risks,
+21
+and impose minimal impacts on the electricity grid. Applying our method to a Dutch case, we find
+22
+substantial diversity in how carbon-neutral DHNs can be designed. The flexibility in technology
+23
+choice, sizing, and location enables accommodating different real-world needs and achieving
+24
+high electrification levels without increasing grid loading. For instance, intelligently located heat
+25
+pumps and thermal storage can limit grid stress even when renewable baseload heat sources
+26
+and green-fuel boilers are scarce. Using our method, planners can explore diverse carbon-
+27
+neutral DHN designs and identify the design that best balances stakeholders’ preferences.
+28
+INTRODUCTION
+29
+Heating is the largest energy end-use globally, accounting for half of total energy consumption1,2.
+30
+Most of the heat generated is used in the residential sector—second only to industry—to meet
+31
+space heating and domestic hot water needs in buildings3,4. In the European Union (EU), resi-
+32
+dential heating is responsible for 40% of total energy consumption, with roughly two-thirds of the
+33
+heat supply still based on fossil fuels5,6. The reliance on fossil fuel for residential heating is even
+34
+more pronounced in some individual EU Member States; for example, in the Netherlands, around
+35
+85% of residential heating is supplied by natural gas7,8. Consequently, the decarbonization of
+36
+residential heating has become a central pillar for accelerating the energy transition globally9–11,
+37
+and particularly in the EU12–14. Besides climate goals, decarbonizing residential heating will also
+38
+reduce the EU’s reliance on imported fossil fuels and increase its energy security in an era of
+39
+fading geopolitical stability15,16.
+40
+There are several potential pathways for decarbonizing residential heat supply17–21. How-
+41
+ever, two main pathways have received particular attention in policy debates and academia:
+42
+decentralized heating using individual building-level heat pumps22–24, and centralized heating
+43
+1
+arXiv:2603.12202v1  [eess.SY]  12 Mar 2026
+through carbon-neutral district heating networks (DHNs)25–27. While decentralized heating using
+44
+individual heat pumps has significant potential to decarbonize residential heat supply28, large-
+45
+scale deployment faces several practical limitations, such as substantial space requirements
+46
+and the need for higher building insulation29,30. This poses a significant challenge in the EU,
+47
+where most of the residential building stock is old, poorly insulated, and difficult to retrofit at
+48
+scale6. Centralized heating through carbon-neutral DHNs offers an alternative or complemen-
+49
+tary decarbonization pathway, as it can meet user preferences across buildings with different
+50
+characteristics25,27. Moreover, DHNs enable the integration of diverse heat sources and thermal
+51
+energy storage, which increases system flexibility and resilience31. The deployment of DHNs is
+52
+particularly appealing in the EU since approximately 70% of buildings are located in urban areas
+53
+with high heat demand density, making district heating more cost-efficient than decentralized
+54
+heat pumps32–34. As highlighted in the Heat Roadmap Europe reports, district heating will play a
+55
+key role in the transition to a sustainable, resilient, and affordable energy system in Europe, with
+56
+its market share in the heat supply mix set to expand from 13% today to 55% by 205014,34.
+57
+Given its key role in the heat transition, many studies have investigated different strategies
+58
+to design cost-effective DHNs that, unlike traditional DHNs relying on fossil-fuel combustion,
+59
+use carbon-neutral heat sources. Among these strategies are power-to-heat (P2H) technologies
+60
+such as large-scale centralized heat pumps and electric boilers that rely on the—increasingly
+61
+carbon-neutral—electricity system for heat production, as well as geothermal and other low-
+62
+temperature heat sources that require electricity to upgrade heat supply temperatures. Con-
+63
+sequently, the decarbonization of DHNs will further accentuate the interactions between heat
+64
+and electricity systems, making their operation and planning increasingly interdependent35,36.
+65
+This growing interdependence has increased the need for integrated heat–electricity system
+66
+planning37. Prior research on the decarbonization of DHNs has ignored these interactions38–45,
+67
+or mostly focused on electricity generation capacity adequacy challenges, to assess the addi-
+68
+tional generation capacity required to support the decarbonization of DHNs17,46,47. These stud-
+69
+ies therefore provide limited insight into electricity network bottlenecks, as they typically rely on
+70
+highly simplified models that lack spatial resolution.
+71
+The electricity network is increasingly recognized as a critical enabler or bottleneck of the en-
+72
+ergy transition48,49, and must be modeled with high spatial resolution to determine where and to
+73
+what extent network upgrades are needed to support decarbonization. In an attempt to address
+74
+this, recent studies used integrated optimization frameworks to jointly optimize the planning of
+75
+DHNs and electricity networks19,20,50,51. However, these studies have two major limitations. First,
+76
+although spatially resolved, they typically rely on a simplified representation of the electricity net-
+77
+work due to computational limitations in including detailed power flow equations in large-scale
+78
+optimization models. As a result, such models are inadequate for identifying operational bottle-
+79
+necks, such as transformer and line loadings, which are crucial for the management and planning
+80
+of electricity network infrastructure52,53. Second, integrated optimization assumes common own-
+81
+ership, which is intrinsically misaligned with real-world settings since these networks are typically
+82
+owned and operated by different stakeholders. Hence, integrated optimization may result in im-
+83
+practical and misleading conclusions54. In the literature, model coupling has been proposed as
+84
+a technique to address these limitations of integrated optimization55. Model coupling links dif-
+85
+ferent computational models through interface variables, enabling high-resolution analysis with
+86
+high-fidelity models while respecting system boundaries36,55. Despite its advantages, the ap-
+87
+plication of model coupling to investigate the electricity network implications of decarbonizing
+88
+DHNs is lacking in the literature. Therefore, a high-resolution assessment of electricity network
+89
+operational bottlenecks arising from the decarbonization of DHNs—particularly when accounting
+90
+for more realistic planning practices—remains largely unexplored.
+91
+Another gap persists in the literature: existing studies strive to identify the “least-cost” technol-
+92
+ogy configuration—under a handful of narrative scenarios—required to decarbonize DHNs42,46,51.
+93
+2
+However, not looking beyond the “least-cost” solution can be short-sighted due to the inability
+94
+of cost-optimization models to capture harder-to-model dimensions such as structural uncer-
+95
+tainty, social acceptance, system resilience, and other political aspects56–58. This is particularly
+96
+relevant in the context of decarbonizing DHNs as it requires long-term investment decisions un-
+97
+der deep uncertainty, and involves multiple stakeholders with potentially conflicting objectives.
+98
+For instance, while residual heat from industries is a cost-effective, low-carbon heat source, its
+99
+long-term availability is uncertain as industries decarbonize or may relocate59. Public opposition
+100
+may limit the deployment of geothermal heat sources60, while space limitations may restrict the
+101
+build-out of pipeline infrastructure needed to connect remote heat sources to demand61. These
+102
+multi-dimensional uncertainties are difficult to parameterize in a model, making the insistence on
+103
+a single “least-cost” solution of limited practical use to real-world stakeholders62,63.
+104
+Moreover, studies that focus solely on the “least-cost” system design provide limited gener-
+105
+alizable insights for accelerating the decarbonization of DHNs in other regions. This is because
+106
+DHNs are inherently local systems, and technology choices are strongly shaped by site-specific
+107
+or local conditions. For instance, the uneven distribution of geothermal resources across Eu-
+108
+rope14 implies that geothermal heat might be technically infeasible in some regions, despite
+109
+being a cost-effective heat source. The potential for exploiting residual heat also varies across
+110
+regions, as its feasibility depends on proximity to demand centers and the temporal alignment
+111
+between industrial activities and local heat demand. Regions with a highly congested electricity
+112
+network may experience a significant slowdown in the uptake of P2H technologies, regardless
+113
+of their economic attractiveness. All these factors play out at a more local scale and define what
+114
+is technically and socially feasible before cost considerations. Therefore, the lack of analysis
+115
+beyond purely economic assessment leaves planners with a limited understanding of how dis-
+116
+parities in local conditions reshape DHN design, specifically regarding the trade-offs that arise
+117
+when the deployment of specific technologies is constrained by local conditions.
+118
+This paper addresses the above gaps by conducting the first high-resolution assessment of a
+119
+broad range of technology configurations for decarbonizing DHNs and their potential impacts on
+120
+the electricity network. Specifically, we address the following questions: (i) What is the range of
+121
+alternative, economically-comparable technology configurations for decarbonizing DHNs, and to
+122
+what extent do these configurations differ in their electricity network impacts? (ii) What trade-offs
+123
+are involved when the deployment of certain low-carbon heat supply technologies is constrained
+124
+by local conditions, and what are the spillover effects on the electricity network?
+125
+In doing so, we develop a model coupling framework that links a capacity-expansion and
+126
+operation-optimization model of a DHN to an AC power flow simulation model of an electric-
+127
+ity network. Model coupling enables a high-resolution assessment of temporally and spatially
+128
+resolved electricity network bottlenecks that are difficult to capture with monolithic integrated
+129
+optimization frameworks. Also, model coupling more closely reflects real-world practices as it
+130
+retains individual ownership of each network model. Our approach follows a sequential work-
+131
+flow (see section Methodology framework in experimental procedures) in which we first apply
+132
+the Modeling to Generate Alternatives (MGA) technique to the DHN model to generate many
+133
+near-optimal carbon-neutral DHN designs. MGA allows us to explicitly account for structural un-
+134
+certainty by systematically exploring a broad option space of similarly costly but technologically
+135
+diverse carbon-neutral DHN designs. By moving beyond prescribing a single “least-cost” design
+136
+to uncovering an option space of alternatives, we reveal the flexibility in choice, location, and
+137
+sizing of heat supply technologies, thermal storage, and heat pipeline infrastructure required to
+138
+achieve carbon neutrality. This option space can help planners understand the trade-offs re-
+139
+quired to accommodate harder-to-model dimensions—such as social acceptance and long-term
+140
+uncertainty in resource availability—and to balance potentially conflicting preferences across
+141
+different stakeholders.
+142
+Subsequently, we quantify the electricity network impacts of each carbon-neutral DHN design
+143
+3
+by using its spatially resolved electricity profiles as inputs to the AC power flow simulation. We
+144
+synthesize the outputs from both models into an integrated heat-electricity network planning
+145
+decision space that maps DHN design characteristics to their corresponding electricity network
+146
+loadings. Network operators can explore this decision space to examine cross-network trade-
+147
+offs and support coordinated network expansion planning. In sum, using our method, energy
+148
+system planners can identify economically comparable DHN designs that are more robust to
+149
+future risks and impose minimal impacts on the electricity network.
+150
+To showcase the potential of our method, we apply it to a case study in the Dutch region
+151
+of South Holland. We focus on one of its largest existing DHNs (see Figure S1), which is pro-
+152
+jected to expand substantially in the future, reaching an annual heat demand of about 2700
+153
+GWh and a peak capacity of 1400 MW by 2050 (see Figure S3). For the electricity system, we
+154
+model the current regional network (see Figure S2). In addition to the spatial and temporally
+155
+resolved electricity profiles from the DHN model, we also include profiles from other consumers
+156
+connected to the same network. This allows us to assess the overall grid impact induced by the
+157
+decarbonization of the DHN in the context of broader regional electrification. As a starting point,
+158
+we apply MGA to generate 515 near-optimal solutions that represent alternative DHN designs
+159
+that are maximally different from the least-cost solution while total system cost remains within
+160
+10% of the least-cost case. Additionally, we examine the effects of tightening and further relax-
+161
+ing this cost budget as a proxy for technology cost uncertainty, and also investigate scenarios
+162
+with different weather years and demand projections (see section Sensitivity analysis results in
+163
+supplemental information). This yields a total of 3,605 alternative carbon-neutral DHN designs,
+164
+each of which is subject to a full-year, hourly-resolution AC power flow simulation to quantify
+165
+their corresponding electricity network impacts using transformer and line loadings. Given the
+166
+extent of our analysis, we cannot examine all results with the same degree of detail here. How-
+167
+ever, we release all our results freely on Zenodo64, and also make our code open source65 for
+168
+transparency and reproducibility.
+169
+Our contribution extends beyond the methodology as we also advance the broader discussion
+170
+on planning future carbon-neutral DHNs. First, our systematic exploration of the near-optimal
+171
+design space captures the interactions between technology options and reveals untold design
+172
+features and associated trade-offs. For instance, we show the existence of diverse strategies
+173
+to achieve higher DHN electrification levels without increasing electricity network loading—such
+174
+as spatially distributing the deployment of P2H units but at the expense of more heat pipeline
+175
+infrastructure build-out, or by prioritizing heat pumps over electric boilers, with additional thermal
+176
+storage to limit heat pipeline expansion. Second, by considering many technologies and explicitly
+177
+analyzing cases in which certain options are unavailable, we make our findings generalizable by
+178
+capturing trade-offs that could appear in any region, showing how location-specific constraints
+179
+shape the design space. Finally, our extensive discussion provides insights into the potential role
+180
+of different technologies in future carbon-neutral DHNs, particularly when interactions with the
+181
+electricity network and resource constraints are considered.
+182
+We approach the presentation of our results in four steps. We first discuss the model results
+183
+for the least-cost solution as a basis of comparison. Next, we present a broader option space of
+184
+near-optimal carbon-neutral DHN designs to reveal the trade-offs it would entail to accommodate
+185
+certain design preferences. We then assess these alternative DHN designs within an integrated
+186
+heat-electricity network planning decision space to quantify their electricity network impacts.
+187
+Finally, we investigate how local technology availability or deployment constraints reshape the
+188
+feasible design space and associated electricity network impact outcomes.
+189
+4
+RESULTS
+190
+Cost-minimization concentrates investment in technology con-
+191
+figurations with high deployment risks and electricity network
+192
+loading
+193
+The model results for the conventional cost-minimization run are shown in Figure 1. The least-
+194
+cost system design for decarbonizing the DHN suggests a high investment in electric boilers and
+195
+green gas boilers, each reaching roughly 400 MW of installed capacity. This is complemented
+196
+by 200 MW of industrial residual heat and 185 MW of geothermal capacity, while heat pumps
+197
+and hydrogen boilers play only a marginal role (also see Figure S11), with a combined capacity
+198
+of about 25 MW. The system further relies on short-term thermal storage in steel water tanks,
+199
+providing 320 MW of discharge thermal power and 1920 MWh of energy buffer, together with a
+200
+moderate build-out of heat pipeline infrastructure of around 415 MW.
+201
+Although cost-optimal and technically feasible, several features of the least-cost solution ap-
+202
+pear potentially undesirable when viewed through a broader planning lens. First, the least-cost
+203
+design relies heavily on green gas—which is biogas upgraded to the Dutch natural gas quality
+204
+standards such that it can be directly injected into the current natural gas grid66. Energy transition
+205
+scenarios in Europe anticipate strong cross-sectoral competition for biomass67, which is needed
+206
+for green gas production. As biomass is both resource-limited and contested68, uncertainty re-
+207
+mains regarding the amount of green gas that will be allocated for residential heating69. There-
+208
+fore, while cost-effective, large green gas capacity build-out could result in underutilized capacity
+209
+or even undermine system resilience if green gas availability becomes more constrained or ex-
+210
+pensive than projected. Second, more than half of the baseload capacity is provided by industrial
+211
+residual heat from a nearby petrochemical industry in Rotterdam. However, as for many simi-
+212
+lar industrial residual heat projects globally59,70,71, the long-term availability of this heat source
+213
+is also uncertain, given societal opposition to fossil-fuel industries and the potential decline of
+214
+refinery or similar heavy-industry activities as economies decarbonize. Third, the least-cost so-
+215
+lution entails a substantial deployment of geothermal, which aligns with the real-world ambition
+216
+to develop four geothermal wells in The Hague (see Figure S10). Still, concentrating geothermal
+217
+infrastructure in a single urban area may face practical barriers, including social acceptance and
+218
+permitting challenges60,72.
+219
+Finally, another potentially undesirable feature is the higher deployment of electric boilers
+220
+instead of more efficient heat pumps.
+This is because electric boilers are about five times
+221
+cheaper than heat pumps in investment cost (see Table S1), and therefore—despite the lower ef-
+222
+ficiency—are an economically attractive heat electrification option for DHN operators. However,
+223
+a high reliance on less efficient electric boilers imposes severe stress on the electricity grid, as
+224
+shown by the transformer and line loading duration curves in Figure 1. Moreover, to minimize
+225
+heat network expansion costs, the cost-optimal deployment of electric boilers is near demand
+226
+centers, further increasing loading in already congested transformers and lines while those with
+227
+more available capacity remain underutilized (see Figures S12 and S13 for the loading duration
+228
+curves of all transformers and lines in the electricity network). From an integrated system per-
+229
+spective, the implication is a shift in costs from the DHN to the electricity grid since accommodat-
+230
+ing the resulting peak electricity flows would require substantial investment in grid reinforcement.
+231
+These outcomes are an artifact of cost-minimization, which hinges solely on economic perfor-
+232
+mance to identify the “least-cost” system design. Therefore, solely relying on cost-minimization
+233
+to design carbon-neutral DHNs may result in technology pathways that are more vulnerable to
+234
+future risks and uncertainties, and that impose substantial stress on the electricity grid.
+235
+5
+(A) Technology configuration for the least-cost design
+Primary supply 
+capacity
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Deployed capacity  [MW]
+Storage discharge 
+capacity
+0
+100
+200
+300
+400
+500
+Heat pipeline 
+capacity
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Residual heat
+Solar thermal
+Waste-to-energy
+Storage-HT-ATES
+Storage-TES
+Heat pipeline
+(B) Transformer loading duration curve
+(C) Line loading duration curve
+6
+Figure 1. Least-cost model results
+236
+(A) Technology configuration for the least-cost DHN design showing cost-optimal deployed ca-
+237
+pacities of heat supply technologies, thermal energy storage, and heat pipeline infrastructure.
+238
+CHP: combined heat and power; Storage-TES: short-term energy storage in water tanks; Storage- 239
+HT-ATES: seasonal energy storage using high-temperature aquifer thermal energy storage.
+240
+(B-C) Transformer and line loading duration curves for selected components in the electricity
+241
+network (see Figures S12 and S13 for the loading duration curves of all transformers and lines).
+242
+The red dashed lines represent the maximum practical loading limit for transformers and lines,
+243
+which is 110% in the regional electricity network we used as case study. The blue dashed lines
+244
+correspond to transformer and line loadings from the power flow simulation performed using only
+245
+the electricity profiles of local consumers, without considering the DHN electricity profiles. The
+246
+teal area plot shows transformer and line loadings after the DHN electricity profiles have been
+247
+included, along with the electricity profiles from other local non-DHN consumers.
+248
+A broad range of diverse district heating system designs ex-
+249
+ists near the cost-optimum
+250
+Given that some features of the least-cost DHN design may be undesirable in practice and
+251
+therefore warrant modification, we want to explore economically comparable design alternatives
+252
+and investigate whether and to what extent these undesirable features can be mitigated, and
+253
+the trade-offs that this would entail. To do so, we implement an upgraded version of the MGA
+254
+SPORES algorithm (see section Generating SPORES in experimental procedures) to generate
+255
+515 alternative carbon-neutral DHN system designs. These alternatives, which we call SPORES,
+256
+represent feasible system designs, namely configurations of technology deployment, that are
+257
+maximally different from the least-cost solution while total system cost remains within 10% of the
+258
+least-cost case.
+259
+Figure 2(A) illustrates the frequency distribution of potential capacity utilization across the
+260
+near-optimal decision space. We see that, apart from pipelines, which are required to distribute
+261
+heat throughout the network, all technologies can attain zero utilization of their potential capacity.
+262
+This implies that apart from heat pipelines, all technologies are “real choices”; that is, they are not
+263
+a strict “must-have” since they can be fully substituted by a combination of functionally equivalent
+264
+alternatives, irrespective of the accepted cost relaxation (see Figures S23 and S24). However,
+265
+such substitutions entail significant trade-offs, revealing key interactions between technology
+266
+choices.
+267
+To illustrate these trade-offs, we highlight a few SPORES in Figure 2(A), and also show their
+268
+technology configurations in Figure 2(B). We can see, for instance, that: (i) reducing reliance
+269
+on green gas boilers (see low-boiler greengas SPORE) from 400 MW in the least-cost solu-
+270
+tion to 100 MW is possible by increasing the deployment of hydrogen (+240 MW) and electric
+271
+(+100 MW) boilers. This additional peaking capacity reduces the need for storage (-25 MW).
+272
+At the same time, geothermal capacity may increase slightly (+15 MW) to compensate for the
+273
+decrease in heat pumps (-15 MW). (ii) Decreasing electric boiler capacity (see low-electric
+274
+boiler & geothermal SPORE) from 400 MW to 70 MW is possible by deploying higher heat
+275
+pump (+160 MW) and hydrogen boiler (+ 200 MW) capacity, and consequently, higher storage
+276
+capacity (+130 MW) to exploit low price periods in electricity and hydrogen, which are more
+277
+volatile than green gas (see Figures S4, S5, and S6). This also increases system flexibility
+278
+and reduces the need for baseload technologies such as geothermal (-45 MW). (iii) Reducing
+279
+residual heat (see low-residual heat SPORE) from 200 MW to 90 MW, which provides cheap
+280
+7
+baseload capacity, can be compensated by higher deployment of waste-to-energy (+200 MW)
+281
+and geothermal (+5 MW), coupled with higher heat pipeline expansion (+255 MW) to connect
+282
+these remote heat sources to demand centers.
+283
+Interestingly, we find that technologies such as CHPs, seasonal storage (HT-ATES), and solar
+284
+thermal play only a limited role and are therefore, not crucial to the system as their utilization
+285
+remains relatively low across all SPORES, irrespective of the cost relaxation (see Figures S23
+286
+and S24), weather year (see Figures S25 and S26), or heat demand scenario (see Figures S27
+287
+and S28). For CHPs and HT-ATES, their limited utilization is primarily due to their high investment
+288
+cost. For solar thermal, although its maximum potential capacity can be fully utilized even under
+289
+small cost relaxations (see Figure S23), its utilization frequency remains consistently low across
+290
+most SPORES. This is because of the structural mismatch between its seasonal production and
+291
+heat demand that requires substantial additional investment in storage and pipeline capacity
+292
+(see Figures S15 and S16), making it less competitive than other alternatives.
+293
+Assessing the effects of increasing the utilization of CHPs, HT-ATES, and solar thermal—by
+294
+explicitly maximizing their deployment (see section Generating SPORES in experimental proce-
+295
+dures)—shows that under a higher cost budget, additional capacity in these technologies simply
+296
+co-exists with the current least-cost deployment rates of other technologies (see Figures S15
+297
+and S16). In other words, increasing the capacity of these technologies does not trigger sig-
+298
+nificant substitutions but instead represents a parallel, higher-cost pathway. Further trade-offs
+299
+associated with increasing other preferences can be explored using the full dataset of our results
+300
+freely available on Zenodo64. Overall, we find that a marginal increase in cost creates substan-
+301
+tial flexibility in how a carbon-neutral DHN can be designed (also see Figures S23 and S24).
+302
+This flexibility in technology choice, sizing, and location provides maneuvering space to mitigate
+303
+the potentially undesirable features of the least-cost solution, and to accommodate other un-
+304
+modeled preferences or real-world needs, such as enhanced system resilience through greater
+305
+technology and supply diversity.
+306
+8
+(A) Frequency distribution of potential capacity utilization in the near-optimal space
+(B) Technological configuration of three highlighted alternative designs
+Low boiler-greengas
+Primary
+supply
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Deployed capacity  [MW]
+Storage 
+discharge
+0
+100
+200
+300
+400
+500
+Heat 
+pipeline
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Low electric boiler & geothermal
+Primary
+supply
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Storage 
+discharge
+0
+100
+200
+300
+400
+500
+Heat 
+pipeline
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Low residual heat
+Primary
+supply
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Storage 
+discharge
+0
+100
+200
+300
+400
+500
+Heat 
+pipeline
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Residual heat
+Solar thermal
+Waste-to-energy
+Storage-HT-ATES
+Storage-TES
+Heat pipeline
+9
+Figure 2. Near-optimal decision space with three highlighted alternative
+307
+district heating network designs and their technology configuration
+308
+(A) Frequency distribution of potential capacity utilization across the whole set of alternative
+309
+DHN designs (515 SPORES). Utilization is defined as the deployed technology capacity relative
+310
+to the maximum technical potential capacity of the technology in the model. Three SPORES
+311
+(low boiler-green gas, low electric boiler & geothermal, and low residual heat) are highlighted to
+312
+show the trade-offs it would entail to reduce the deployment of green gas boilers, electric boilers
+313
+& geothermal, and residual heat for these highlighted DHN designs (SPORES).
+314
+(B) Technological configuration of three highlighted alternative DHN (SPORES) showing the de-
+315
+ployed capacity of primary heat supply technologies, thermal energy storage, and heat pipeline
+316
+infrastructure.
+317
+Higher levels of electrification can be achieved without increas- 318
+ing electricity network loading
+319
+We have shown in the previous section that maneuvering space exists to reduce or completely
+320
+eliminate reliance on technologies associated with potentially undesirable features of the least-
+321
+cost solution. So far, we assessed the trade-offs within this maneuvering space only from the
+322
+DHN perspective. We now proceed to examine these trade-offs from an integrated heat–electricity
+323
+system perspective to (i) determine the extent to which alternative DHN designs differ in their
+324
+electricity network loading and (ii) identify key design features that impose impact loading on the
+325
+electricity network. To achieve this, we subject each of SPORE to a full AC power flow simulation
+326
+to quantify its impact on the electricity network, reflected by transformer and line loadings. We
+327
+then synthesize the results from both the heat and electricity model runs for each SPORE into
+328
+an integrated decision space to quantify cross-network trade-offs using the heat and electricity
+329
+network assessment metrics defined in Table 1.
+330
+Examining the impact of each SPORE or near-optimal DHN design on the electricity network
+331
+shows that, overall, SPORES exhibit significant variations in grid loadings (see Figures S19
+332
+and S20). The integrated decision space, which maps the characteristics of SPORES to their
+333
+corresponding electricity network loadings, is shown in Figure 3. We highlight the subset of
+334
+generated SPORES with lower electricity network loading compared to the least-cost solution
+335
+across all electricity network metrics.
+That is, these SPORES fall within all lower electricity
+336
+network loading envelopes represented by the dashed rectangles. We further highlight selected
+337
+SPORES in Figure 3(A)to illustrate the underlying cross-network trade-offs, and zero in on these
+338
+SPORES in Figure 3(B) to compare their absolute electricity network impacts against the case
+339
+without DHN electrification and the case with the least-cost DHN design. As expected, SPORES
+340
+with low P2H capacity generally exhibit lower electricity network loading, as they rely more on
+341
+non-electric heat supply technologies. For instance, the low-electrification SPORE has a
+342
+P2H share of 25 % of its primary supply capacity (-26 % compared to the least-cost), resulting
+343
+in higher deployment of gas-based capacity (+9 %) and non-dispatchable heat sources (+20 %).
+344
+Since non-dispatchable heat sources are often located far from demand centers, they require
+345
+additional (+355 MW) pipeline expansion (see Figures S17 and S18).
+346
+A similar pattern is observed for the lowest-electrification SPORE; however, this design
+347
+requires a more moderate expansion in pipeline capacity (+265 MW) due to its higher share of
+348
+gas boilers (+70 %), which can typically be sited closer to demand centers. Interestingly, the
+349
+lowest-electrification SPORE does not fall within all lower electricity network loading en-
+350
+velopes, as it exhibits a higher number of transformer overload events. This is not driven by
+351
+10
+electrification of the DHN per se, but rather by insufficient local electric capacity to absorb power
+352
+supply from local distributed PV generators. In this case, the absence of P2H capacity allows
+353
+local renewable electricity to flow upstream, leading to reverse power flows and higher trans-
+354
+former overloads. Therefore, while excessive heat electrification can increase network loading,
+355
+moderate levels of electrification may in fact alleviate overloading in networks with high shares
+356
+of distributed PV generation (also see bus voltage profiles in Figure S14).
+357
+Surprisingly, some SPORES that deploy P2H capacity above cost-optimal have even lower
+358
+electricity network loading.
+For instance, the high-electrification SPORE deploys 20 %
+359
+more P2H capacity than the least-cost solution, and yet results in lower grid loading because
+360
+P2H units are more spatially distributed across the network. This intelligent spatial deployment
+361
+avoids concentrating P2H units in already congested locations, albeit at the expense of addi-
+362
+tional (+105 MW) pipeline expansion (see Figures S17 and S18). However, where such large
+363
+pipeline infrastructure build-out is not possible, for instance due to space constraints, higher
+364
+levels of electrification can still be realized without further compromising grid loading by prioritiz-
+365
+ing—within P2H units—more efficient heat pumps combined with thermal storage over electric
+366
+boilers, as shown by the highest-electrification SPORE in Figure 3 (also see Figures S17
+367
+and S18). In sum, we find that grid loading depends not only on the level of heat electrification
+368
+but also on the interaction between technology choices and their spatial deployment patterns.
+369
+Therefore, irrespective of the scenario (see Figures S29 to S34 in Sensitivity analysis results),
+370
+higher levels of heat electrification can be achieved with even lower electricity network loadings.
+371
+11
+Table 1. Definition of heat and electricity network assessment metrics and
+372
+their range in the integrated decision space
+373
+Metric name
+Metric description and interpretation
+Metric range
+Power-to-heat
+capacity
+Total share of heat pumps and electric boilers in the
+primary heat supply capacity. Reflects the degree of
+heat electrification and the dependence of the DHN on
+the electricity network (ELN).
+0–74 %
+Gas-based
+capacity
+Total share of heat supply technologies that use hydro-
+gen or green gas as fuel (boilers and CHPs). Reflects
+DHN flexibility from fully dispatchable thermal capacity
+that can be rapidly ramped to meet peak demand.
+0–62 %
+Non-
+dispatchable
+capacity
+Total share of baseload technologies (geothermal,
+residual heat, and solar thermal) in the primary heat
+supply capacity. Reflects inflexible heat sources since
+these technologies have limited ramping capability.
+0–50 %
+Storage capacity
+Total discharge capacity of heat storage technologies,
+including both short-term (TES) and seasonal (HT-
+ATES) storage. Reflects the temporal flexibility of the
+DHN and the decoupling of heat supply from demand.
+0–456 MW
+Pipeline capacity
+Total capacity of heat distribution pipeline infrastruc-
+ture. Reflects the spatial flexibility of the DHN to meet
+heat demand with supply units at different locations.
+305–1200 MW
+Levelized cost of
+heat
+Average discounted long-run cost of heat supply from
+the DHN. Indicates the overall economic performance
+of the DHN.
+70–79 C/MWh
+Line
+overload
+eventsa
+Number of persistent overload events experienced by
+all lines in the ELN. Indicates the frequency and dura-
+tion of line overloading across the entire ELN.
+0–144
+Number of over-
+loaded lines
+Proportion of lines in the ELN that experience persis-
+tent overloading. Indicates the spread or spatial extent
+of line overloading across the entire ELN.
+0-65 %
+Line loadingb
+The 75th percentile of the distribution of the 90th per-
+centile loading values across all lines in the ELN. In-
+dicates the typical severity of line loading across the
+entire ELN.
+60–350 %
+Transformer
+overload events
+Number of persistent overload events experienced by
+all transformers in the ELN. Indicates the frequency
+and duration of transformer overloading across the en-
+tire ELN.
+104–149
+Number
+of
+overloaded
+transformers
+Proportion of transformers in the ELN that experience
+persistent overloading. Indicates the spread or spa-
+tial extent of transformer overloading across the entire
+ELN.
+60–95 %
+Transformer
+loading
+The 75th percentile of the distribution of the 90th per-
+centile loading values across all transformers in the
+ELN. Indicates the typical severity of transformer load-
+ing across the entire ELN.
+160–285 %
+374
+12
+Definition of heat and electricity network metrics used to quantify trade-offs in the integrated
+375
+heat-electricity network decision space. The metric range represents the minimum and maxi-
+376
+mum computed values of each metric across all DHN designs in the near-optimal decision space,
+377
+that is, across all 515 SPORES. These metrics are particularly relevant for heat and electricity
+378
+network operators to help them understand how the different characteristics of alternative district
+379
+heating network designs affect the electricity network.
+380
+aGenerally, it is not considered a severe problem if an electrical component (line or trans-
+381
+former) is slightly loaded above its rated capacity for a short duration of time. Therefore, we only
+382
+track the number of “persistent” overload events, which we compute as the number of counts an
+383
+electrical component is loaded above its maximum limit (in this case, 110%) for 7 consecutive
+384
+simulation snapshots.
+385
+bThe electricity network loading is highly heterogeneous across components and time, as
+386
+shown by the load duration curves in supplemental Figures S12 and S13. To obtain a statisti-
+387
+cally representative measure of electricity network impacts, we first compute the 90th percentile
+388
+loading value over time for each individual line and transformer to capture high-loading condi-
+389
+tions relevant for network planning. We then summarize these component-level values using the
+390
+75th percentile across all components, since the differences between alternative DHN designs
+391
+are most pronounced in this range, as shown by the box plots in Figure 3(B).
+392
+13
+(A) Integrated heat-electricity network planning decision space
+Power-to-heat 
+capacity
+Gas-based 
+capacity
+Non-
+dispatchable 
+capacity
+Storage 
+capacity
+Pipeline 
+capacity
+Levelized 
+ cost of heat
+Line overload 
+ events
+# overloaded 
+ lines
+Line loading
+Trafo overload 
+ events
+# overloaded 
+ trafos
+Trafo loading
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Metric score (Min-max normalized performance)
+DHN metrics
+ELN metrics
+Without DHN
+Least-cost
+Lower (w.r.t. Least-cost) ELN loading envelope
+SPORES within all lower ELN loading envelopes
+Other SPORES
+Lowest electrification
+Low electrification
+High electrification
+Highest electrification
+(B) Electricity network impacts of the four highlighted SPORES
+Without DHN
+Least-cost
+High electrification
+Low electrification
+Highest electrification
+Lowest electrification
+Line overload events
+Least-cost 
+benchmark
+# overloaded lines
+Line loading
+0
+100
+200
+300
+Overload events  [-]
+Without DHN
+Least-cost
+High electrification
+Low electrification
+Highest electrification
+Lowest electrification
+Trafo overload events
+0
+25
+50
+75
+100
+Overloaded components  [%]
+# overloaded trafos
+0
+100
+200
+300
+Component loading  [%]
+Trafo loading
+14
+Figure 3. Integrated heat–electricity network planning decision space with
+393
+four highlighted district heating network designs and their grid impacts
+394
+(A) Integrated heat–electricity network planning decision space mapping different DHN charac-
+395
+teristics to their corresponding electricity network (ELN) impacts. Light purple bars represent
+396
+DHN metrics, and light blue bars represent ELN metrics. All SPORES within the lower grid
+397
+loading envelope (dashed rectangle) correspond to designs with lower grid impacts for a given
+398
+ELN metric compared to the least-cost DHN design. The deep pink dots denote SPORES that
+399
+lie within the lower grid loading envelope across all ELN metrics—that is, the intersection of all
+400
+dashed rectangles. Four SPORES are highlighted (lowest electrification, low electrification, high
+401
+electrification, and highest electrification), spanning from minimal to very high heat electrifica-
+402
+tion, to illustrate how different electrification levels affect the electricity network.
+403
+(B) Electricity network impacts of the four highlighted SPORES. The box plots show the absolute
+404
+grid loading of the four highlighted SPORES against two benchmarks: the case without DHN
+405
+electrification (first row in each box plot) and the least-cost DHN design (second row in each box
+406
+plot).
+407
+Location-specific constraints transform real choices into prac-
+408
+tical must-haves
+409
+The maneuvering space described in section A broad range of diverse district heating system
+410
+designs exists near the cost-optimum represents the purely techno-economic flexibility available
+411
+to system planners to accommodate other practically desirable features or unmodeled prefer-
+412
+ences, assuming all the considered technology options are available. However, as previously
+413
+mentioned, DHNs are inherently local, and therefore, the concrete technology configurations
+414
+depend on local constraints. We now want to re-examine this option space to see how plausi-
+415
+ble local constraints may impact the trade-offs that we have revealed so far, thereby providing
+416
+insights that may be generalizable to a broader range of DHNs. To do so, we consider the follow-
+417
+ing set of plausible local constraints: (i) unfavorable subsurface conditions for the deployment of
+418
+geothermal and HT-ATES; (ii) insufficient proximity to residual heat sources; (iii) restricted space
+419
+availability for large solar thermal installations; (iv) limited availability or lack of existence of a
+420
+reliable supply chain for less established technologies such as green gas and hydrogen boilers;
+421
+(v) limited heat electrification in the case of a congested electricity network. We then filter the
+422
+previously generated SPORES to retain only those that satisfy these constraints.
+423
+We see (Figure 4) that, unsurprisingly, the potential unavailability of technology options that
+424
+already had a low deployment frequency in the unconstrained option space, such as solar ther-
+425
+mal and HT-ATES, does not dramatically affect the maneuvering space for designing the carbon-
+426
+neutral DHN. Moreover, when explicitly considering the subset of SPORES that ensure lim-
+427
+ited grid impact, the changes are identical to those observed in the initial unconstrained option
+428
+space (see Figure S21), most notably, a reduced reliance on electric boilers. Other design deci-
+429
+sions, such as whether to rely more on gas boilers, non-dispatchable (baseload) sources, or heat
+430
+pumps, remain “real choices”. Contrarily, changes to the design space are more pronounced,
+431
+instead, when the reliance on either green gas or hydrogen boilers is constrained by local so-
+432
+cial preferences or supply chain scarcity (also see Figure S22). When both such boilers are,
+433
+for instance, limited to a capacity of no more than 20% of peak demand, ensuring the economic
+434
+competitiveness of the DHN requires limiting reliance on less cost-effective technologies, such as
+435
+CHPs, solar thermal, HT-ATES, waste-to-energy, and—though to a lesser extent—also baseload
+436
+sources, pipeline, and very large heat pump capacities. If mitigating grid impact is factored
+437
+15
+in, the design options to compensate for limited gas boiler capacity reduce further, with elec-
+438
+tric boilers—an obvious functionally equivalent substitute—almost ceasing to be a viable option.
+439
+The consequence is a need to maximize the limited available capacity of cost-effective green
+440
+gas boilers alongside as-high-as-possible (subject to budget constraints) deployment of efficient
+441
+heat pumps and conventional TES far beyond least-cost levels (see Figures S35 to S40 in Sen-
+442
+sitivity analysis results). However, constraining electric boilers does not nearly have the same
+443
+effect; limiting their deployment mainly affects budget considerations as it marginally shrinks the
+444
+overall maneuvering space, but substantially benefits grid-related considerations, irrespective of
+445
+the scenario (see Figures S35 to S40), consistent with the findings in section Higher levels of
+446
+electrification can be achieved without increasing electricity network loading.
+447
+The most challenging limitation is dealing with the lack of baseload heat sources, such as
+448
+geothermal and residual heat (also see Figures S35 to S40). In line with the trade-offs we high-
+449
+lighted in prior sections, Figure 4 shows that the complete absence of such sources still leaves
+450
+several options for designing a cost-effective carbon-neutral DHN. However, factoring in the si-
+451
+multaneous need to mitigate grid impacts substantially reduces the maneuvering space for other
+452
+decisions. If geothermal is not an option locally, then trading off such a heat source with moder-
+453
+ate reliance on residual heat partly compensates for it. However, a simultaneous higher reliance
+454
+on gas boilers is necessary to keep both costs and grid impact limited (also see Figures S35
+455
+to S40). Meanwhile, higher heat pump capacities, alongside conventional thermal storage, must
+456
+be prioritized, too, over economically convenient but less efficient electric boilers, when minimiz-
+457
+ing grid impact becomes a priority. What is more, a careful, intelligent spatial deployment of such
+458
+P2H assets is critical, in line with our findings in section Higher levels of electrification can be
+459
+achieved without increasing electricity network loading. When residual heat is the unavailable
+460
+source, our results show a similar, albeit more pronounced, dynamic. This is because residual
+461
+heat, in our case study (see section Technology modeling in experimental procedures), is already
+462
+at high temperatures and therefore, unlike geothermal, requires no auxiliary electricity for tem-
+463
+perature upgrades, making it more challenging to maintain low grid stress within the remaining
+464
+technology options and budget (also see Figures S35 to S40). This may differ for residual heat
+465
+sources at lower temperatures. Our case study, therefore, plays a role in the exact magnitude
+466
+of the remaining design maneuvering space in Figure 4 when neither geothermal nor residual
+467
+heat is an option. However, the high-level trade-offs we highlight remain valid and generalizable:
+468
+a lack of baseload heat sources requires greater reliance on carbon-neutral gas boilers and, to
+469
+the extent allowed by grid constraints, intelligently deployed heat pumps coupled with thermal
+470
+storage.
+471
+It is worth noting that simultaneously removing multiple technology options is not always
+472
+possible. For instance, the lack of baseload heat sources requires some reliance on gas boilers
+473
+if mitigating grid stress is a concern. Moreover, even when using gas boilers, the simultaneous
+474
+absence of local geothermal and residual heat does not enable the design of a DHN that meets
+475
+the grid-integration requirements we have identified. This may, of course, be different for a DHN
+476
+system whose local electricity grid has greater capacity and can accommodate more electrical
+477
+assets than the one we used as a case study.
+478
+16
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+ (A)  No geothermal
+ (B)  No residual heat
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+ (C)  No solar thermal
+ (D)  No HT-ATES
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+ (E)  Limited gas (20% peak demand)
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+ (F)  Limited e-boiler (20% peak demand)
+Least-cost
+SPORES with lower ELN loading
+Other SPORES
+479
+17
+Figure 4. Trade-offs under local technology deployment constraints
+480
+(A-F) Alternative DHN designs under six technology deployment constraints. Gray dots represent
+481
+feasible SPORES (DHN designs) under each specific constraint. Deep pink dots indicate fea-
+482
+sible SPORES that achieve lower grid impacts across all electricity network impact assessment
+483
+metrics (see Table 1) compared to the least-cost DHN design. See supplemental Figure S21 for
+484
+the corresponding trade-offs in the unconstrained “All options available” case.
+485
+(A-D) Represent cases with the complete absence of specific technologies such as geothermal
+486
+heat, residual heat, solar thermal heat, and high-temperature aquifer thermal energy storage,
+487
+whose deployment is constrained by local resource availability.
+488
+(E-F) Represent constraints to cap the deployed capacity of technologies, such as any type of
+489
+gas boiler and electric boilers, that are likely to be always available in any location.
+490
+DISCUSSION
+491
+We have argued that designing a carbon-neutral DHN solely on the basis of minimum cost can
+492
+lead to several potentially undesirable features, such as over-reliance on heat sources with un-
+493
+certain availability, concentration of geothermal heat sources in a single location that could stir
+494
+public opposition, and large electric boiler capacity build-out that could stress the electricity net-
+495
+work. These features of cost-minimization are not only unique to our case. Broader energy
+496
+system planning studies have likewise identified similar patterns in least-cost system designs,
+497
+such as over-deployment of a technology in a single location73, or reliance on a large capacity
+498
+of a few potentially problematic technologies74 .
+499
+We concede that the type and severity of potentially undesirable features of a least-cost de-
+500
+sign may vary across DHNs in different regions. For instance, regions with abundant biomass
+501
+resources may find it less problematic to deploy large capacities of biomass-based heating tech-
+502
+nologies. However, for many European countries, such as the Netherlands, which have limited
+503
+domestic biomass availability68, it remains highly uncertain where sufficient sustainable biomass
+504
+would be sourced to produce biofuels or green gas at scale66. Therefore, for such countries, de-
+505
+signing a DHN that relies heavily on biomass-derived fuels represents a technology pathway that
+506
+is more vulnerable to potential risks from supply uncertainty or import dependence, a concern
+507
+that has already been raised by real-world stakeholders75.
+508
+Irrespective of the region, designing a carbon-neutral DHNs requires long-term investment
+509
+decisions under deep uncertainty, including uncertainties that are difficult to parameterize in a
+510
+model, such as social acceptance63. Additionally, because electrification will play an important
+511
+role in the decarbonization of DHNs76, DHN planners must ensure that system designs are not
+512
+only robust to future uncertainties, but also impose minimal stress on the electricity network since
+513
+reinforcing the grid is not only costly77, but also slow due to long lead times, permitting delays,
+514
+material supply constraints, and workforce shortage75.
+515
+This study, therefore, presents a decision-support method for designing carbon-neutral DHNs
+516
+that are less vulnerable to future risks and have minimal impact on the grid while remaining near-
+517
+optimal in cost. By applying MGA within a framework that couples a DHN capacity expansion
+518
+and operation model with a power flow simulation model of the electricity network, we develop a
+519
+method to systematically explore similarly costly but technologically diverse DHN designs, and
+520
+quantify their impacts on the electricity network. Applying our method to a Dutch case study, we
+521
+demonstrate that with a marginal cost increase above the optimum, there is substantial diversity
+522
+in how a carbon-neutral DHN can be designed, and the diverse designs exhibit significant varia-
+523
+tions in grid impact. Within the near-optimal decision space, almost all technologies can be fully
+524
+substituted by functionally equivalent alternatives, and thus are “real choices”. This flexibility in
+525
+18
+choice, sizing, and location of technologies—while system cost remains near optimal—provides
+526
+planners with substantial maneuvering space to mitigate potential risks and balance conflicting
+527
+preferences across different stakeholders in order to reach a consensus solution.
+528
+Naturally, accommodating certain preferences requires significant trade-offs. For instance,
+529
+we find that decreasing the deployment of electric boilers—to minimize grid impact—and re-
+530
+ducing the concentration of geothermal heat sources in The Hague—to mitigate potential risks
+531
+from public opposition—requires higher deployment of heat pumps and more thermal storage.
+532
+Similarly, reducing reliance on residual heat from a nearby petrochemical industry can be com-
+533
+pensated for by higher deployment of waste-to-energy heat sources and more pipeline expan-
+534
+sion. Although the exact magnitude of these trade-offs will vary across DHNs and regions, the
+535
+structural dynamics in technology interaction and substitution we uncover here are likely to be
+536
+consistent in other DHNs. For instance, we find that designs with lower green gas boiler deploy-
+537
+ment require an almost proportional increase in peaking technologies, such as electric and/or
+538
+hydrogen boilers, or more baseload heat sources, coupled with higher storage levels. Similar
+539
+interaction patterns between heating technologies have been observed in a study examining
+540
+existing DHN technology mixes across different European countries78. Our analysis, however,
+541
+reveals these dynamics systematically across the full design option space, enabling planners to
+542
+understand the underlying substitution patterns and quantify the trade-offs required to accom-
+543
+modate diverse preferences and constraints that match the needs of different stakeholders.
+544
+The trade-offs associated with reducing reliance on specific technologies become more pro-
+545
+nounced when we wish to keep grid impact minimal. For instance, under a 10% cost budget
+546
+above the least-cost case, green gas boilers cannot be reduced below 20% of their potential
+547
+capacity, while the deployment of electric boilers must be lower than the capacity suggested
+548
+by the least-cost design across all investigated scenarios if minimizing grid impact is a priority.
+549
+Using our integrated decision space that maps DHN characteristics to their corresponding grid
+550
+loading, it is possible to identify DHN designs with low grid impacts. While it is straightforward
+551
+that such designs will generally have lower levels of electrification, we find that higher levels of
+552
+electrification can, in fact, be achieved with even lower grid loading. The high-electrification and
+553
+low-grid loading designs generally (i) have a more intelligent spatial distribution of P2H tech-
+554
+nologies across the network, thereby reducing concentration in already congested locations but
+555
+at the expense of more pipeline expansion; (ii) prioritize more efficient heat pumps—combined
+556
+with higher thermal storage deployment—over electric boilers. These findings refine prevailing
+557
+narratives in the literature that associate high heat electrification rates with grid stress22,24. Our
+558
+results show that grid overloads depend not only on the degree of electrification but also on the
+559
+interaction between technology choices and their spatial deployment patterns.
+560
+Another, perhaps counterintuitive finding enabled by our model coupling approach is the inter-
+561
+action between heat electrification and distributed PV generators. We find that some moderately
+562
+electrified DHN designs reduce transformer overloads compared to low-electrification designs,
+563
+since P2H units avoid reverse peak power flows upstream by absorbing surplus generation from
+564
+local PVs. This suggests that heat electrification may alleviate grid congestion resulting from
+565
+peak supply, and also increase the efficiency of PVs in energy systems with high shares of
+566
+distributed PV generation. However, the temporal mismatch between heat demand for space
+567
+heating and PV generation limits the scale of this solution. Perhaps, this could scale up if heat
+568
+electrification is coupled with higher (seasonal) thermal storage, particularly for designs dom-
+569
+inated by heat pumps, since heat pumps are most efficient when it is sunnier. A few studies
+570
+claim that coordinating the operation of PV, heat pump, and thermal storage can accelerate
+571
+decarbonization35,79. However, more work is needed to determine whether relying on heat elec-
+572
+trification and thermal storage to absorb excess generation from PVs is economically beneficial
+573
+from a broader energy system perspective, compared to direct curtailment.
+574
+A particularly noteworthy discussion concerns hydrogen boilers, whose potential use for res-
+575
+19
+idential heating is highly debated in the literature66,80. Most studies conclude that hydrogen is
+576
+unlikely to play a role in future DHNs for several reasons, including costs, efficiency losses, and
+577
+competition with other difficult-to-electrify sectors such as industry and transport81,82. While our
+578
+least-cost solution indeed aligns with this claim, the near-optimal option space, however, shows
+579
+that hydrogen boilers emerge as a valuable alternative when reliance on biomass-derived fuels
+580
+is reduced, and even more so when avoiding electricity network overloads becomes a priority.
+581
+This implies that for DHNs in regions with limited biomass availability and a highly congested
+582
+grid, hydrogen boilers could be a potential backup option for security of supply. Therefore, it
+583
+may be premature to categorically exclude hydrogen boilers from future DHN planning. Instead,
+584
+their potential role should be assessed in light of regional resource constraints, grid conditions,
+585
+system resilience, and long-term infrastructure development strategies.
+586
+Another question concerns the future role of sustainable-fuel CHPs in carbon-neutral DHNs.
+587
+We find that within the near-optimal option space, both the utilization frequency and deployed
+588
+capacity of CHPs remain low across all designs. This is primarily because CHPs become more
+589
+capital-intensive under frequent low electricity price periods in a broader decarbonized energy
+590
+system dominated by wind and solar. Our finding aligns with a recent EU-wide study that sug-
+591
+gests a declining role for CHPs in future DHNs14. However, some studies emphasize that CHPs
+592
+may retain a strategic value for power system decarbonization, generation adequacy, and se-
+593
+curity of supply when peak demand periods coincide with low wind and solar availability17. Our
+594
+sensitivity analysis using a cold weather year with low solar and wind output—the so-called cold
+595
+dark doldrums—shows only a marginal increase in CHP deployment across designs, as the few
+596
+periods of high electricity prices are insufficient to offset investment costs. This suggests that
+597
+if CHPs are to play a role in power system decarbonization, relying solely on energy-only mar-
+598
+ket revenues may not provide sufficient incentive; instead, dedicated policy support or capacity
+599
+remuneration mechanisms might be required to incentivize their deployment.
+600
+We also observe a similar pattern for seasonal storage (HT-ATES) and solar thermal across
+601
+all designs. In our case, these technologies are only deployed when additional budget is made
+602
+available, without any significant technology substitution, suggesting that their deployment mostly
+603
+represents a parallel, higher-cost alternative design. Similar conclusions have been drawn in
+604
+other studies, where HT-ATES is found to be too costly and to significantly increase the lev-
+605
+elized cost of heat83. For solar thermal, although it can reach its maximum potential capacity
+606
+in some designs, we find that potential capacity utilization frequency remains low—even in rela-
+607
+tively warmer weather year—primarily due to the additional investments required in storage and
+608
+complementary supply technologies to compensate for the seasonal mismatch between solar
+609
+thermal production and heat demand. A similar dynamic has also been highlighted in the lit-
+610
+erature for DHNs with significant solar thermal capacity, such as the Gram Fjernvarme DHN in
+611
+Denmark, where achieving higher solar thermal penetration has required large-scale seasonal
+612
+storage and integration with multiple additional heat supply technologies78. However, further
+613
+work is needed to assess the economic viability of these technologies within a broader energy
+614
+system context, particularly for HT-ATES, which some studies have shown to increase energy
+615
+system efficiency and reduce overall cost84.
+616
+Nevertheless, as we have argued previously, DHN design decisions should not be based
+617
+solely on economic cost.
+Deploying technologies that appear consistently at lower capacity
+618
+across designs, such as CHPs, HT-ATES, and solar thermal, could be justified as a strategy to
+619
+enhance system resilience through greater flexibility and technological diversity. Such technolo-
+620
+gies may provide alternative supply pathways, reduce dependence on a few dominant resources,
+621
+and increase the system’s ability to cope with unexpected disruptions in fuel supply, infrastructure
+622
+constraints, extreme weather events, or unplanned maintenance. Indeed, the economic value of
+623
+resilience is difficult to quantify, as its benefits typically materialize only after a shock occurs85.
+624
+Therefore, it is important to provide planners with the full option space for them to deliberate
+625
+20
+on what is most practically viable for society since the contribution of certain technologies may
+626
+extend beyond short-term cost performance.
+627
+The inherently local nature of DHNs implies that some of the technologies we investigate here
+628
+might not be an option in certain locations. For instance, certain regions may lack geothermal
+629
+heat sources due to unfavorable geological conditions. To provide more insights for DHNs in
+630
+other regions, we reexamined the previously described trade-offs under a set of plausible tech-
+631
+nology availability constraints. We find that a challenging local constraint is the limited availability
+632
+of fuels, such as hydrogen or biomass, for fuel boilers. When this is the case, prioritizing heat
+633
+pumps and thermal storage over other technologies is vital to ensure both cost effectiveness
+634
+and limited grid impact. Even more challenging is the potential local unavailability of geother-
+635
+mal or residual heat. While this local barrier does not prevent designing a carbon-neutral DHN
+636
+per se, if minimizing grid impact is a priority, then at least one carbon-neutral baseload heat
+637
+source (geothermal or residual heat) and a design combining a spatially-optimized large-scale
+638
+deployment of heat pumps with thermal storage and some form of gas-based peaking technology
+639
+become indispensable.
+640
+As with all modeling studies, our work is not without limitations. First, we do not explicitly
+641
+quantify the extent of grid reinforcement required to accommodate DHN electrification. Grid
+642
+reinforcement needs depend not only on DHN-related loads but also on other local electricity
+643
+demands and generation, which are treated as static in our analysis. In practice, some of these
+644
+static loads will have some flexibility to respond to high network tariffs during potential grid con-
+645
+gestion periods. Therefore, quantifying grid upgrades without accounting for demand-response
+646
+and grid tariffs would be misleading. Accordingly, our results should be interpreted as indicating
+647
+the isolated potential impacts of DHN electrification on the existing grid, rather than as estimates
+648
+of actual reinforcement requirements.
+649
+Second, computational limitations shape our modeling choices. The DHN planning model
+650
+is formulated as a linear program (LP) to avoid the computational complexity associated with
+651
+non-convex formulations. As a result, hydraulic flow dynamics are not explicitly represented,
+652
+and we modeled heat flows using a simplified transport model. Moreover, investment decisions
+653
+allow for fractional technology capacities rather than discrete unit sizes due to the LP formula-
+654
+tion. Even with this simplification, the large number of MGA runs required to thoroughly explore
+655
+the near-optimal space was only feasible using high-performance computing resources86. For
+656
+similar computational reasons, location-specific technology constraints were imposed ex post by
+657
+filtering the previously computed option space, rather than by re-running the MGA for each new
+658
+constraint. Endogenously including each constraint and recomputing the near-optimal space
+659
+would shift the global optimal cost, which is used for setting the cost budget. Our sensitivity anal-
+660
+ysis on the cost budget can be interpreted as partially capturing the implications of such shifts.
+661
+A potential solution to improve computational efficiency would be to narrow the search space
+662
+through stakeholder engagement, for example, via more targeted human-in-the-loop MGA ap-
+663
+proaches87. All these limitations provide a foundation for future research to focus on.
+664
+In conclusion, carbon-neutral DHNs are expected to play a key role in decarbonizing residen-
+665
+tial heating and accelerating the energy transition. Yet, designing carbon-neutral DHNs requires
+666
+balancing several potentially conflicting objectives, including economic costs, social acceptance,
+667
+robustness to future risks, and grid integration challenges arising from electrification. By com-
+668
+bining modeling-to-generate-alternatives with power flow simulation techniques for the first time,
+669
+this study offers broadly applicable insights as well as a decision-support method for design-
+670
+ing carbon-neutral DHNs that are cost-effective, socially acceptable, robust to future risks, and
+671
+impose minimal impacts on the electricity network.
+672
+21
+EXPERIMENTAL PROCEDURES
+673
+Resource availability
+674
+Lead contact
+675
+Requests for further information, resources, and materials should be directed to and will be
+676
+fulfilled by the lead contact, Christian Doh Dinga (c.dohdinga@tu.delft.nl).
+677
+Materials availability
+678
+This study did not generate new unique materials.
+679
+Data and code availability
+680
+The code to reproduce the experiments and visualizations in this study is available on Git-
+681
+Lab: https://gitlab.tudelft.nl/demoses/demoses-network-interactions, and is archived
+682
+on Zenodo: https://zenodo.org/records/18943449.
+683
+684
+A dataset of the modeling results has been deposited to Zenodo: https://zenodo.org/records/
+685
+18943509.
+686
+Methodology framework
+687
+A visualization of the methodology framework developed in this study is shown in Figure 5. We
+688
+use model coupling to link the DHN capacity expansion and operation optimization model to the
+689
+AC power flow simulation model of the electricity network. The two models are coupled together
+690
+using the temporally and spatially resolved electricity profiles as interface variables.
+691
+Electricity network model
+Input
+• Heat network topology
+• Weather data
+• Heat demand
+• Technology data
+• ...
+Near-cost-optimal designs
+Least-cost design
+Integrated analysis for coordinated heat-electricity network planning
+AC power flow simulation
+Input
+• Electricity network topology
+• Transformer parameters
+• Line parameters
+• Other electricity profiles
+• ...
+Electricity network loading
+Output
+Output
+Temporally 
+and Spatially 
+resolved 
+electricity 
+profiles
+of district 
+heating assets
+District heating network model
+Minimize 
+system costs
+Assign/update
+weights
+Re-run with 
+new objective:
+min/maximize 
+technology
+deployment 
+while cost 
+within budget
+Repeat
+MGA runs
+Cost 
+budget
+692
+22
+Figure 5. Methodology framework
+693
+The model execution follows a sequential approach. First, we solve the DHN optimization prob-
+694
+lem to identify the least-cost system design. This yields the optimal capacities of all heat supply
+695
+technologies, storage, and pipelines, along with their dispatch for each snapshot over the full
+696
+simulation horizon. From the dispatch results, we extract the temporally and spatially resolved
+697
+electricity consumption profiles for all P2H technologies (electric boilers and heat pumps) and
+698
+other technologies, such as geothermal heat sources and HT-ATES, that have auxiliary electricity
+699
+consumption due to booster heat pumps that upgrade heat from these sources. We also extract
+700
+temporally and spatially resolved electricity-generation profiles for CHP technologies. These
+701
+endogenously determined electricity profiles, along with the exogenous electricity profiles from
+702
+other local loads/generation connected to the same electricity network, are subsequently used as
+703
+inputs to an AC power flow model. The results of the second model run are then used to quantify
+704
+the impacts of the least-cost DHN design on the grid using transformer and line loadings.
+705
+After analyzing the least-cost design and computing the least-cost of the system, we use it
+706
+as input and apply a Modeling-to-Generate-Alternatives (MGA) algorithm (see section Finding
+707
+near-optimal district heating network designs) to generate a large set of near-optimal alternative
+708
+DHN designs. For each alternative design, we repeat the full workflow: (i) capacity expansion
+709
+and dispatch optimization, (ii) extraction of electricity profiles, (iii) AC power flow simulation.
+710
+We use the open-source orchestrator tool Snakemake88 to automate the entire workflow and
+711
+ensure reproducibility. See supplemental Figure S41 for the resulting directed acyclic graph
+712
+(DAG) showing all the jobs executed and their dependencies for the entire workflow per scenario.
+713
+The final step of the workflow consists of synthesizing the outputs from both models into an
+714
+integrated analysis to support coordinated network planning decisions.
+715
+Finding the least-cost district heating network design
+716
+The capacity expansion and operation optimization model of the DHN shown in supplemental
+717
+Figure S1 is implemented in the open-source tool PyPSA89. An energy system infrastructure in
+718
+PyPSA is represented using fundamental components such as buses I, generators G, links F,
+719
+storage units H, and stores E. Based on this component representation, PyPSA automatically
+720
+formulates a linear optimization problem that minimizes total system costs subject to technical
+721
+and physical constraints.
+722
+The objective function of the DHN optimization problem is to minimize the total annual DHN
+723
+system costs, including both investment and operational expenditures for generation, conversion,
+724
+storage, and distribution infrastructure, and maximize revenues from electricity generated by
+725
+CHPs. To express investment costs on an annual basis, we use the annuity factor (1 −(1 +
+726
+τ)−n)/τ, which converts the upfront overnight investment cost of an asset into annual payments,
+727
+considering its lifetime n and cost of capital τ. The objective function therefore includes the
+728
+annualized capital costs c∗for investments at node i in generator capacity Gi,r ∈R+ of technology
+729
+r, storage energy capacity Ei,s ∈R+ of technology s, and energy conversion and transport
+730
+capacities Fk ∈R+ (links). In addition, it includes variable operating costs o∗associated with
+731
+generator dispatch gi,r,t ∈R+ and link dispatch fk,t ∈R+. Accordingly, the objective function can
+732
+be written as shown in Equation 1:
+733
+23
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+min
+G,E,F,g,f
+" X
+i,r
+ci,r · Gi,r +
+X
+i,s
+ci,s · Ei,s +
+X
+k
+ck · Fk
++
+X
+t
+Wt ·
+ X
+i,r
+oi,r · gi,r,t +
+X
+k
+ok · fk,t
+!
+−
+ X
+t,k
+λelec
+t
+· ηelec · fk=chp,t
+! #
+(1)
+Thereby, the representative time snapshots t are weighted by the time span Wt such that their
+734
+total duration adds up to one year; P
+t∈T Wt = 365 · 24h = 8760h. The last term of the objective
+735
+function represents revenues from electricity generated by CHPs, which is a product of electricity
+736
+prices λelec
+t
+, the electrical efficiency ηelec, and dispatch fk=chp,t of CHPs.
+737
+In addition to the cost-minimizing objective function, as extensively described in prior work90,
+738
+the model imposes a set of linear constraints including energy balance at each node and timestep,
+739
+storage level consistency over time, limits on the capacities of generation, storage, conversion,
+740
+and distribution infrastructure arising from technical potentials, and time-dependent availability
+741
+constraints for variable heat sources.
+742
+Technology modeling
+743
+In this section, we provide a high-level description of how different district heating technologies
+744
+are modeled using PyPSA components. We present mathematical formulations only for tech-
+745
+nologies that require additional custom constraints beyond those already established by PyPSA.
+746
+An exhaustive description of PyPSA’s mathematical formulation is provided in Neumann et al. 90,
+747
+and our code is openly available online65.
+748
+Air-source heat pumps
+749
+Air-source heat pumps (ASHPs) are modeled as unidirectional links that convert electricity into
+750
+heat with an efficiency given by the coefficient of performance (COP). The COP depends on the
+751
+ambient temperature and on the temperature difference between source and sink, defined as
+752
+∆T = Tsink −Tsource, and is therefore time-varying. The COP for ASHPs is calculated as:
+753
+COP(∆T) = 6.81 + 0.121∆T + 0.000630∆T 2
+(2)
+The numerical coefficients correspond to the default values in the PyPSA-Eur model90, de-
+754
+rived from regression analysis. The resulting time-varying COP in relation to ambient tempera-
+755
+ture for the default weather year is shown in supplemental Figures S8 and S9.
+756
+Boilers and waste-to-energy
+757
+Electric boilers, gas (green gas and hydrogen) boilers, and waste-to-energy are modeled using
+758
+PyPSA’s fundamental link component, and are configured as unidirectional energy converters
+759
+that convert electricity, gas, and waste material, respectively, into heat with fixed conversion
+760
+efficiencies.
+761
+Combined heat and power
+762
+Combined heat and power (CHP) technologies are modeled as unidirectional multi-output links
+763
+that convert gas (green gas or hydrogen) into heat and electricity. Similar to Neumann et al. 90,
+764
+we assume back-pressure operation with a fixed ratio between electricity and heat output.
+765
+Geothermal heat
+766
+A geothermal heat system is modeled as a compound component consisting of a generator and
+767
+two unidirectional links. The generator represents a geothermal well producing low-temperature
+768
+heat qinit
+t
+, one link represents a booster heat pump consuming electricity and producing heat
+769
+24
+qbooster
+t
+, and the final link supplies the upgraded heat qfinal
+t
+to the heat network. The seasonal
+770
+performance factor (SPF) of the geothermal system, defined as the electricity consumption per
+771
+unit of final heat supplied to the network, couples these variables. Therefore, we impose the
+772
+following additional constraints:
+773
+qfinal
+t
+= qinit
+t
++ qbooster
+t
+(3)
+qfinal
+t
+= SPF · qbooster
+t
+COP(t)
+(4)
+Combining Equation 3 and Equation 4 yields:
+774
+qbooster
+t
+=
+COP(t)
+SPF −COP(t) · qinit
+t
+(5)
+which guarantees a fixed proportional contribution of geothermal well heat and booster heat
+775
+to the final heat supplied by the geothermal heat source to the heat network.
+776
+Solar thermal and residual heat
+777
+Solar thermal and residual heat are modeled as generator components. For solar thermal, dis-
+778
+patch is constrained by the optimized capacity and a time-varying capacity factor derived from
+779
+solar availability. High-temperature industrial residual heat is represented as a generator with
+780
+a time-varying availability profile dependent on industrial activity, such that heat production is
+781
+limited by both optimized capacity and temporal availability.
+782
+Seasonal thermal energy storage
+783
+Seasonal storage in the form of high-temperature aquifer thermal energy storage (HT-ATES) is
+784
+modeled as a compound component consisting of a store and four links. The store represents
+785
+the thermal energy reservoir with energy level et, which has a standing loss or thermal decay
+786
+defined as 1 −exp(−1/24t). The links correspond to charging qcharge
+t
+, initial low-temperature
+787
+discharge qdischarge
+t
+, booster heat pump output qbooster
+t
+, and final upgraded heat supplied to the
+788
+network qfinal
+t
+. The relationship between et, qcharge
+t
+, and qdischarge
+t
+is automatically established by
+789
+PyPSA through intertemporal storage energy level balance constraints. Similar to geothermal
+790
+systems, HT-ATES has a SPF that couples qdischarge
+t
+, qbooster
+t
+, and qfinal
+t
+. Accordingly, we introduce
+791
+the following additional constraints:
+792
+qfinal
+t
+= qdischarge
+t
++ qbooster
+t
+(6)
+qfinal
+t
+= SPF · qbooster
+t
+COP(t)
+(7)
+Combining Equation 6 and Equation 7 yields:
+793
+qbooster
+t
+=
+COP(t)
+SPF −COP(t) · qdischarge
+t
+(8)
+which guarantees a fixed proportional contribution of reservoir discharge and booster heat to
+794
+the final heat supplied by the HT-ATES system to the network.
+795
+Short-term thermal energy storage
+796
+Short-term thermal energy storage in small water tanks is modeled using PyPSA’s fundamental
+797
+storage unit component with charging and discharging efficiencies and standing losses. The
+798
+power and energy capacities in PyPSA are linked through a maximum discharge duration hmax
+799
+parameter.
+800
+Heat pipelines
+801
+25
+Heat pipelines are modeled using PyPSA’s fundamental link component, but are configured as
+802
+bidirectional to allow flows in both directions between connected nodes. Heat distribution in
+803
+pipelines is subject to efficiency losses proportional to pipeline length, and the flow through each
+804
+pipe is limited by its optimized capacity.
+805
+Finding near-optimal district heating network designs
+806
+We use Modeling to Generate Alternatives (MGA) techniques63 to compute near-optimal DHN
+807
+designs that differ in choice, sizing, and location of technologies in the network. For notational
+808
+brevity, let cTx denote the linear objective function in Equation 1 and Ax ≤b the set of constraints
+809
+that define the feasible region of the optimization problem in a space of continuous variables such
+810
+that the minimized system cost C∗can be represented by:
+811
+C∗= min
+x {cTx|Ax ≤b}
+(9)
+To compute near-optimal alternatives, the least-cost solution C∗is first identified as a start-
+812
+ing point. Subsequently, the original cost-based objective expression is turned into a problem
+813
+constraint such that the cost increase is limited by a slack ϵ as shown in Equation 10.
+814
+cTx ≤(1 + ϵ) · C∗
+(10)
+In other words, the feasible space is cut to solutions that are at most ϵ more expensive
+815
+than the least-cost solution C∗. With this additional constraint, we can reformulate the objective
+816
+function to focus on iteratively identifying different feasible system designs, all of which are within
+817
+a reasonable economic-viability bandwidth ϵ. As discussed in prior work62,63, MGA objectives for
+818
+such exploration of alternative near-optimal solutions can be set up in various ways, each with its
+819
+own relative merits. In this work, we use an ad-hoc version of the MGA SPORES algorithm62,73,
+820
+which is particularly suited to exploring system designs that differ not only in overall technology
+821
+mix but also in the spatial deployment of technology, a key variable for the grid impact that we
+822
+set out to assess in this study.
+823
+Generating SPORES
+824
+The key idea underlying the generation of Spatially explicit Practically Optimal Results (SPORES)
+825
+is to use a multi-objective MGA search strategy that combines spatial and technological diver-
+826
+sification with feature intensification, enabling heavy parallel computing and tailoring to problem
+827
+needs. While this has been partly the case since the method’s first appearance73, SPORES
+828
+has evolved and has been used in various formulations in the literature62, which may lead to
+829
+confusion. Here, we provide a more generalizable and up-to-date illustration of SPORES, and
+830
+we outline how we use it in this work.
+831
+The mathematical formulation of a generic problem for generating SPORES can be defined
+832
+as follows.
+833
+
+
+
+
+
+
+
+
+
+
+
+min Z = a ·
+ X
+i,r
+ωi,r · Y cap
+i,r
+!
+± b ·
+ X
+i
+ˆY cap
+i,r
+!
+s.t.
+Ax ≤b
+cTx ≤(1 + ϵ) · C∗
+(11)
+The first term in Equation 11 includes all technologies subject to diversification, where Y cap
+i,r
+834
+indicates the capacity decision variable at location i for technology type r. Diversification is
+835
+26
+achieved by updating the dynamic weight ωi,r. This is similar to conventional ‘Hop-Skip-Jump’
+836
+methods but is spatially explicit and offers several customization options for the weight formu-
+837
+lation, with different relative merits62, as described below. The second term includes only the
+838
+subset of technologies under intensification, with ˆY cap
+i,r
+the capacity decision variable under in-
+839
+tensification (maximized or minimized). Also known as the ‘variable min-max’ method when
+840
+used standalone91, the intensification component of the objective ensures that all technological
+841
+boundaries of the solution space are systematically mapped, while the diversification compo-
+842
+nent ensures that in-between options are also sampled. The coefficients a and b represent static
+843
+weights that configure the problem as a linear multi-objective optimization problem. When b has
+844
+a positive sign, the technology under intensification is minimized; when b has a negative sign, the
+845
+technology is maximized; and finally, if b is null, the formulation collapses into a diversification-
+846
+only run.
+847
+In fact, the above formulation is designed to leverage heavy parallel computing. Equation 11
+848
+is applied across many parallel runs, each intensifying a different key technology (e.g., hydrogen
+849
+boilers) in a different direction (maximization or minimization), and generating a small sample
+850
+of diverse designs around the intensified technology. In each parallel run, the first near-optimal
+851
+solution is always generated with an exclusive focus on intensification (i.e., the a coefficient is
+852
+null for the first near-optimal solution). Subsequently, the diversification component is added to
+853
+generate further near-optimal solutions that lie in the same region of the design space but are
+854
+technologically or spatially distinct from such first near-optimal solution. In addition, a parallel
+855
+run is carried out exclusively with a diversification component and no intensified feature (b is
+856
+null), in this case targeting the cost-optimal solution as the design to diverge from. In this study,
+857
+we implement 32 parallel runs. 31 runs represent intensification directions, each generating
+858
+15 distinct solutions, while the final run is purely a diversification search, generating 50 distinct
+859
+solutions. This yields a total of 515 near-optimal alternative system designs.
+860
+A distinct feature of the SPORES algorithm is its high degree of customization in updating the
+861
+dynamic weight ωi,r, which drives the diversification component of the objective. As presented
+862
+in prior work62, SPORES supports up to four distinct weighting methods, each best suited to
+863
+particular diversification goals. In this study, we adopt an evolving average strategy to update
+864
+ωi,r. The evolving average strategy assigns a weight to each location–technology pair based on
+865
+the distance from the average capacity deployed Y
+cap
+i,r for that pair across all previously found
+866
+solutions, which is kept up to date—in other words, this average evolves. The evolving average
+867
+weight update strategy at iteration n is defined mathematically as in Equation 12, and is par-
+868
+ticularly suited for deviating strongly from the reference solution—namely, the first near-optimal
+869
+solution found in each parallel run, adopting a pure intensification objective. This ensures that,
+870
+in each parallel run with a given intensification goal, we find solutions that progressively diverge
+871
+from that goal, creating a smoother system design gradient instead of, for instance, solutions
+872
+more tightly clustered around the intensified feature.
+873
+
+
+
+
+
+
+
+
+
+
+
+ωn
+i,r
+=
+
+Y
+cap,n−1
+i,r
+−Y cap,n
+i,r
+Y
+cap,n−1
+i,r
+
+−1
+Y
+cap,n−1
+i,r
+=
+Pn−1
+k=1 Y cap,k
+i,r
+n −1
+(12)
+Quantifying electricity network impacts
+874
+As earlier described in section Methodology framework, to quantify the electricity network im-
+875
+pacts of each DHN design, we use the resulting electricity profiles of the DHN assets as inputs
+876
+27
+to a power flow simulation. The full AC power flow model of the electricity network shown in
+877
+supplemental Figure S2 is implemented in the open-source tool pandapower92.
+878
+Pandapower represents the network mathematically using the complex nodal admittance ma-
+879
+trix Y ∈CN×N, whose elements are defined as Yij = Gij + jBij, where Gij and Bij denote the
+880
+conductance and susceptance between buses i and j, respectively. Given nodal loads and gen-
+881
+erations for each timestep, pandapower establishes active Pi and reactive Qi power balance
+882
+equations at every bus i in the network, defined as in Equation 13 and Equation 14, respectively.
+883
+Pi = Vi
+N
+X
+j=1
+Vj (Gij cos(θi −θj) + Bij sin(θi −θj))
+(13)
+Qi = Vi
+N
+X
+j=1
+Vj (Gij sin(θi −θj) −Bij cos(θi −θj))
+(14)
+where Pi and Qi denote the net active and reactive power injection at bus i, Vi is the voltage
+884
+magnitude, and θi is the voltage angle. The nodal injection is defined as the difference between
+885
+generation and demand for active Pi = P gen
+i
+−P load
+i
+and reactive Qi = Qgen
+i
+−Qload
+i
+power. The
+886
+electricity consumption and generation profiles obtained from the DHN optimization enter the
+887
+model as time-dependent active nodal power injections P load
+i
+(t) and P gen
+i
+(t), and pandapower
+888
+computes their corresponding reactive power as Qi(t) = Pi(t) · tan(ϕ). The phase angle ϕ is
+889
+derived from the power factor PF as arccos(PF).
+890
+To ensure a unique solution of this nonlinear system of equations, one bus is defined as the
+891
+reference bus. At the reference bus, the voltage magnitude Vreference and voltage angle θreference
+892
+are fixed, while active and reactive power injections required to satisfy the system of equations
+893
+are computed endogenously. For all remaining PQ buses (P and Q are given), pandapower
+894
+solves for the unknown voltage magnitudes Vi and voltage angles θi such that Equation 13 and
+895
+Equation 14 are satisfied at each bus. The solution of the AC power flow provides nodal voltages,
+896
+transformer loadings, and line loadings at each time step, which we used to quantify the impacts
+897
+of each DHN design on the electricity network.
+898
+Model setup
+899
+We simulate the year 2050, as the Netherlands aims to achieve carbon neutrality by this year.
+900
+Most of our input data are obtained from the Energy Transition Model93, which provides rich data
+901
+on the Dutch energy system at a national scale. This includes projected energy carrier prices for
+902
+electricity, hydrogen, and green gas until 2050, as well as weather data such as solar thermal
+903
+capacity factor and ambient temperature for different weather years. All time-varying data, such
+904
+as energy prices (see Figures S4 and S5), solar thermal capacity factor (see Figure S7), and
+905
+ambient temperature (see Figure S8) are available at an hourly temporal resolution.
+906
+More detailed data on the current DHN topology and future expansion plans (see Figure S1),
+907
+projected heat demand for the studied DHN (see Figure S3), and techno-economic parameters
+908
+of heat technologies—such as technology efficiencies, and technical potentials—and projected
+909
+prices for other relevant energy carriers—such as waste materials and residual heat (see supple-
+910
+mental Figure S6)—are provided by the DHN operator. The investment costs of heat technolo-
+911
+gies (see supplemental Table S1) are sourced from the Netherlands Environmental Assessment
+912
+Agency report94, and we assume that operational costs are incurred solely from fuel and electric-
+913
+ity consumption. For the DHN optimization model, we assume a greenfield overnight investment
+914
+setting in which no existing assets are considered, as the current fleet of heat technologies is
+915
+expected to be retired well before 2050. Annualized capital costs are calculated using a discount
+916
+28
+rate of 7%. The optimization determines both investment and operational decisions at hourly
+917
+resolution for a full year.
+918
+For the MGA runs, we use a 10% cost slack relative to the least-cost solution for the de-
+919
+fault scenario. We intensify (maximize and minimize) each of the technologies defined in sec-
+920
+tion Technology modeling, as well as selected subsets of technologies. These include electrifi-
+921
+cation technologies (electric boilers and heat pumps), molecule-based technologies (gas boilers
+922
+and CHPs), dispatchable technologies (e.g., boilers), and baseload or non-dispatchable tech-
+923
+nologies (e.g., geothermal and residual heat). Under each of these main search directions,
+924
+a batch of SPORES is generated by adding a diversification term in the new objective func-
+925
+tion and updating its weights through iterations (see the run heat model for each spores loop
+926
+in Figure S41) as described in section Generating SPORES. In total, these runs result in 515
+927
+SPORES, or alternative DHN designs for the default scenario with a 10% cost slack relative to
+928
+the least-cost solution.
+929
+Given the large number of input parameters, we complement the MGA analysis with addi-
+930
+tional sensitivity analyses. Specifically, we vary the cost slack parameter to 5% and 15%. We
+931
+also consider two alternative weather years, in addition to the default weather year 2015: a
+932
+warm weather year (2004), characterized by several periods of excess solar generation, and a
+933
+cold weather year (1987), with low solar and wind output—the so-called cold dark doldrums. Fur-
+934
+thermore, to reflect uncertainty in future heat demand projections, we consider low (-20%) and
+935
+high (+20%) heat demand scenarios. For each of these scenarios, we generate 515 SPORES,
+936
+which, together with the default scenario, result in a total of 3,605 SPORES, which are all subject
+937
+to a full AC hourly-resolution power flow simulation for the entire year (8760 snapshots).
+938
+For the electricity system, we model the current regional network topology (see supplemental
+939
+Figure S2), and do not explicitly consider grid reinforcement. This is because grid reinforcement
+940
+needs depend not only on DHN-related electricity profiles but also on other local electricity load
+941
+and generation profiles—which are treated as static here but may in practice have some flexi-
+942
+bility to respond to high network tariffs during potential grid congestion periods. Detailed data
+943
+on network parameters for buses, transformers, and lines are provided by the electricity net-
+944
+work operator. We combine this existing network infrastructure with projected 2050 exogenous
+945
+electricity profiles for all loads and generators connected to it. The endogenously calculated
+946
+electricity consumption and generation from the DHN are added separately based on the DHN
+947
+optimization results. The power flow simulations are performed at hourly resolution. For solving
+948
+the AC power flow equations, we assume a power factor of 0.95 and focus on active power to
+949
+assess transformer and line loadings, which we used to quantify grid impacts.
+950
+SUPPLEMENTAL INFORMATION INDEX
+951
+Figures S1-S41 and their captions in a PDF.
+952
+Table S1. Technology cost and technical parameters used in the district heating network model.
+953
+ACKNOWLEDGMENTS
+954
+This publication is part of the DEMOSES project, financed by the Dutch Research Council (NWO)
+955
+under grant ID ESI.2019.004. This work used the Dutch national e-infrastructure with the support
+956
+of the SURF Cooperative, using grant no. EINF-11996.
+957
+29
+AUTHOR CONTRIBUTIONS
+958
+Conceptualization, C.D.D. and M.C.; methodology, C.D.D. and F.L.; investigation, C.D.D. and F.L.;
+959
+writing-–original draft, C.D.D. and F.L.; writing-–review & editing, C.D.D., F.L., R.A., A.V.V., S.V.R.,
+960
+L.J.D.V. and M.C.; funding acquisition, L.J.D.V. and M.C.; resources, R.A., A.V.V., L.J.D.V. and
+961
+M.C.; supervision, L.J.D.V. and M.C.
+962
+DECLARATION OF INTERESTS
+963
+The authors declare no competing interests.
+964
+References
+965
+1. International Energy Agency (2014).
+Heating without global warming. Paris:
+IEA.
+966
+https://www.iea.org/reports/heating-without-global-warming.
+967
+2. International Energy Agency (2025). Renewables 2025. Paris: IEA. https://www.iea.org/
+968
+reports/renewables-2025.
+969
+3. International
+Energy
+Agency
+(2021).
+Heating.
+Paris:
+IEA.
+970
+https://www.iea.org/reports/heating.
+971
+4. Gilbert, T., Menon, A.K., Dames, C., and Prasher, R. (2023). Heat source and application-
+972
+dependent levelized cost of decarbonized heat. Joule 7, 128–149. doi: 10.1016/j.joule.
+973
+2022.11.006.
+974
+5. Hofmann, L.M., Clerjon, A., Perdu, F., Bavi`ere, R., and Aza¨ıs, P. (2025). How much dis-
+975
+trict heating in a future sector-coupled energy system? a comprehensive methodology for
+976
+mapping and clustering the infrastructure costs on an entire territory.
+Energy 330. doi:
+977
+10.1016/j.energy.2025.136436.
+978
+6. Toleikyte, A., Roca Reina, J.C., Volt, J., Carlsson, J., Lyons, L., Gasparella, A., Koolen,
+979
+D., De Felice, M., Tarvydas, D., Czako, V., Koukoufikis, G., Kuokkanen, A., and Letout, S.
+980
+(2023). The heat pump wave: Opportunities and challenges. Luxembourg: Publications
+981
+Office of the European Union. doi: 10.2760/27877 jRC134045.
+982
+7. Gross, R., and Hanna, R. (2019). Path dependency in provision of domestic heating. Nature
+983
+Energy 4, 358–364. doi: 10.1038/s41560-019-0383-5.
+984
+8. Kaandorp, C. Transforming urban heating systems: Integrating perspectives on water use,
+985
+committed emissions and energy justice in the city of amsterdam. Ph.D. thesis Delft Univer-
+986
+sity of Technology (2023). doi: 10.4233/uuid:2c4855b0-96f8-4a0f-bbca-22e1dad25874
+987
+doctoral thesis, ISBN 978-94-93315-82-2.
+988
+9. Henry, A., Prasher, R., and Majumdar, A. (2020). Five thermal energy grand challenges for
+989
+decarbonization. Nature Energy 5, 635–637. doi: 10.1038/s41560-020-0675-9.
+990
+10. International Energy Agency (2023). Net zero roadmap: A global pathway to keep the 1.5 ◦c
+991
+goal in reach. Paris: IEA. https://www.iea.org/reports/net-zero-roadmap-a-global-pathway-
+992
+to-keep-the-15-c-goal-in-reach.
+993
+30
+11. Staffell, I., Pfenninger, S., and Johnson, N. (2023). A global model of hourly space heating
+994
+and cooling demand at multiple spatial scales. Nature Energy 8, 1328–1344. doi: 10.1038/
+995
+s41560-023-01341-5.
+996
+12. Thomaßen, G., Kavvadias, K., and Navarro, J.P.J. (2021). The decarbonisation of the eu
+997
+heating sector through electrification: A parametric analysis. Energy Policy 148. doi: 10.
+998
+1016/j.enpol.2020.111929.
+999
+13. Roca Reina, J.C., Carlsson, J., Volt, J., and Toleikyte, A. (2025). Alternatives for de-
+1000
+carbonising high-temperature heating facilities in residential buildings. Energies 18. doi:
+1001
+10.3390/en18020235.
+1002
+14. Mathiesen, B.V., Gonzalez Gonzalo, E., Georgati, M., Nielsen, S., and Nikolic, J. (2025).
+1003
+Heat roadmap europe:towards a sustainable, resilient and competitive heating sector by
+1004
+2050. Aalborg University. ISBN 978-87-93541-63-4.
+1005
+15. International Energy Agency (2022). How to avoid gas shortages in the european union in
+1006
+2023. Paris: IEA. https://www.iea.org/reports/how-to-avoid-gas-shortages-in-the-european-
+1007
+union-in-2023.
+1008
+16. European Commission (2025). The future of european competitiveness. part a: A competi-
+1009
+tiveness strategy for europe. Luxembourg: Publications Office of the European Union. doi:
+1010
+10.2872/1823372 print ISBN 978-92-68-22716-9.
+1011
+17. Kavvadias, K., Jim´enez-Navarro, J.P., and Thomassen, G. (2019). Decarbonising the EU
+1012
+heating sector – integration of the power and heating sector. Luxembourg: Publications
+1013
+Office of the European Union.
+doi: 10.2760/943257 eUR 29772 EN, ISBN 978-92-76-
+1014
+08386-3, JRC114758.
+1015
+18. Narula, K., Chambers, J., Streicher, K.N., and Patel, M.K. (2019). Strategies for decarbon-
+1016
+ising the swiss heating system. Energy 169, 1119–1131. doi: 10.1016/j.energy.2018.12.
+1017
+082.
+1018
+19. Zeyen, E., Hagenmeyer, V., and Brown, T. (2021). Mitigating heat demand peaks in buildings
+1019
+in a highly renewable european energy system. Energy 231, 120784. doi: https://doi.
+1020
+org/10.1016/j.energy.2021.120784.
+1021
+20. Friebe, M., Karasu, A., and Kriegel, M. (2023). Methodology to compare and optimize dis-
+1022
+trict heating and decentralized heat supply for energy transformation on a municipality level.
+1023
+Energy 282. doi: 10.1016/j.energy.2023.128987.
+1024
+21. Berrill, P., Wilson, E.J.H., Reyna, J.L., Fontanini, A.D., and Hertwich, E.G. (2022). Decar-
+1025
+bonization pathways for the residential sector in the United States. Nature Climate Change
+1026
+12, 712–718. doi: 10.1038/s41558-022-01429-y.
+1027
+22. Waite, M., and Modi, V. (2020). Electricity load implications of space heating decarboniza-
+1028
+tion pathways. Joule 4, 376–394. doi: 10.1016/j.joule.2019.11.011.
+1029
+23. Peacock, M., Fragaki, A., and Matuszewski, B.J. (2023). The impact of heat electrification
+1030
+on the seasonal and interannual electricity demand of great britain. Applied Energy 337.
+1031
+doi: 10.1016/j.apenergy.2023.120885.
+1032
+24. Mascherbauer, P., Mart´ınez, M., Mateo, C., Yu, S., and Kranzl, L. (2025). Analyzing the im-
+1033
+pact of heating electrification and prosumaging on the future distribution grid costs. Applied
+1034
+Energy 387. doi: 10.1016/j.apenergy.2025.125563.
+1035
+31
+25. Jim´enez Navarro, J.P., Filippidou, F., Kavvadias, K., and Carlsson, J. (2022). Efficient district
+1036
+heating and cooling. Luxembourg: Publications Office of the European Union. doi: 10.2760/
+1037
+854480 eUR 30986 EN, ISBN 978-92-76-47319-0, JRC126522.
+1038
+26. Fallahnejad, M., Kranzl, L., Haas, R., Hummel, M., M¨uller, A., Garc´ıa, L.S., and Persson,
+1039
+U. (2024). District heating potential in the eu-27: Evaluating the impacts of heat demand
+1040
+reduction and market share growth. Applied Energy 353, 122154. doi: https://doi.org/
+1041
+10.1016/j.apenergy.2023.122154.
+1042
+27. Toleikyte, A., Volt, J., Mountraki, A., Letout, S., Wegener, M. et al. (2025). Clean energy
+1043
+technology observatory: Smart thermal networks in the European Union – 2025 status
+1044
+report on technology development, trends, value chains and markets. Luxembourg: Publi-
+1045
+cations Office of the European Union. doi: 10.2760/6476347 jRC144163.
+1046
+28. International
+Energy
+Agency
+(2022).
+The
+future
+of
+heat
+pumps.
+Paris:
+IEA.
+1047
+https://www.iea.org/reports/the-future-of-heat-pumps.
+1048
+29. Liu, W., Best, F., and Crijns-Graus, W. (2021). Exploring the pathways towards a sustainable
+1049
+heating system – a case study of utrecht in the netherlands. Journal of Cleaner Production
+1050
+280. doi: 10.1016/j.jclepro.2020.125036.
+1051
+30. Roca Reina, J., Toleikyte, A., Volt, J., and Carlsson, J. (2024). Alternatives for upgrading
+1052
+from high-temperature to low-temperature heating systems in existing buildings: Challenges
+1053
+and opportunities. Energy and Buildings 323, 114798. doi: https://doi.org/10.1016/j.
+1054
+enbuild.2024.114798.
+1055
+31. Malcher, X., Tenorio-Rodriguez, F.C., Finkbeiner, M., and Gonzalez-Salazar, M. (2025).
+1056
+Decarbonization of district heating: A systematic review of carbon footprint and key miti-
+1057
+gation strategies. Renewable and Sustainable Energy Reviews 215, 115602. doi: https:
+1058
+//doi.org/10.1016/j.rser.2025.115602.
+1059
+32. Connolly, D., Lund, H., Mathiesen, B.V., Werner, S., M¨oller, B., Persson, U., Boermans,
+1060
+T., Trier, D., Østergaard, P.A., and Nielsen, S. (2014). Heat roadmap europe: Combining
+1061
+district heating with heat savings to decarbonise the eu energy system. Energy Policy 65,
+1062
+475–489. doi: 10.1016/j.enpol.2013.10.035.
+1063
+33. Hansen,
+C.H.,
+and
+Gudmundsson,
+O.
+(2018).
+The
+competitiveness
+of
+district
+1064
+heating
+compared
+to
+individual
+heating:
+When
+is
+district
+heating
+the
+cheapest
+1065
+source of heating?. Dansk Fjernvarme. https://danskfjernvarme.dk/media/zulfbv0j/
+1066
+the-competitiveness-of-district-heating-compared-to-individual-heating.pdf.
+1067
+34. M¨oller, B., Wiechers, E., Persson, U., Grundahl, L., Lund, R.S., and Mathiesen, B.V. (2019).
+1068
+Heat roadmap europe: Towards eu-wide, local heat supply strategies. Energy 177, 554–
+1069
+564. doi: https://doi.org/10.1016/j.energy.2019.04.098.
+1070
+35. Leitner, B., Widl, E., Gawlik, W., and Hofmann, R. (2019). A method for technical assess-
+1071
+ment of power-to-heat use cases to couple local district heating and electrical distribution
+1072
+grids. Energy 182, 729–738. doi: 10.1016/j.energy.2019.06.016.
+1073
+36. Palensky, P., Mancarella, P., Hardy, T., and Cvetkovic, M. (2024). Cosimulating integrated
+1074
+energy systems with heterogeneous digital twins: Matching a connected world. IEEE Power
+1075
+and Energy Magazine 22, 52–60. doi: 10.1109/MPE.2023.3324886.
+1076
+32
+37. Xu, L., Lin, N., Perera, A., Poor, H.V., Guo, Q., Sun, H., and Oppenheimer, M. (2025).
+1077
+Cross-sector energy system resilience and interdependence in a changing climate. Joule
+1078
+9, 101967. doi: https://doi.org/10.1016/j.joule.2025.101967.
+1079
+38. Huckebrink, D., and Bertsch, V. (2022). Decarbonising the residential heating sector: A
+1080
+techno-economic assessment of selected technologies. Energy 257, 124605. doi: https:
+1081
+//doi.org/10.1016/j.energy.2022.124605.
+1082
+39. Zhang, Y., Johansson, P., and Kalagasidis, A.S. (2022). Assessment of district heating and
+1083
+cooling systems transition with respect to future changes in demand profiles and renewable
+1084
+energy supplies.
+Energy Conversion and Management 268. doi: 10.1016/j.enconman.
+1085
+2022.116038.
+1086
+40. Pagani, M., Maire, P., Korosec, W., Chokani, N., and Abhari, R. (2020). District heat net-
+1087
+work extension to decarbonise building stock: A bottom-up agent-based approach. Applied
+1088
+Energy 272, 115177. doi: https://doi.org/10.1016/j.apenergy.2020.115177.
+1089
+41. Malcher, X., and Gonzalez-Salazar, M. (2024). Strategies for decarbonizing european dis-
+1090
+trict heating: Evaluation of their effectiveness in sweden, france, germany, and poland.
+1091
+Energy 306. doi: 10.1016/j.energy.2024.132457.
+1092
+42. Popovski, E., Aydemir, A., Fleiter, T., Bellst¨adt, D., B¨uchele, R., and Steinbach, J. (2019).
+1093
+The role and costs of large-scale heat pumps in decarbonising existing district heating
+1094
+networks – a case study for the city of herten in germany.
+Energy 180, 918–933. doi:
+1095
+10.1016/j.energy.2019.05.122.
+1096
+43. Liu, S., Guo, Y., Wagner, F., Liu, H., Cui, R.Y., and Mauzerall, D.L. (2024). Diversifying heat
+1097
+sources in china’s urban district heating systems will reduce risk of carbon lock-in. Nature
+1098
+Energy 9, 1021–1031. doi: 10.1038/s41560-024-01560-4.
+1099
+44. Siddique, M.B., Keles, D., Scheller, F., and Nielsen, P.S. (2024). Dispatch strategies for
+1100
+large-scale heat pump based district heating under high renewable share and risk-aversion:
+1101
+A multistage stochastic optimization approach. Energy Economics 136. doi: 10.1016/j.
+1102
+eneco.2024.107764.
+1103
+45. Thommessen, C., Verheyen, J., Roes, J., and Hoster, H. (2025). Estimating the value of
+1104
+novel heat sources in district heating systems from the perspective of energy utilities using
+1105
+a merit order approach. Applied Energy 401. doi: 10.1016/j.apenergy.2025.126594.
+1106
+46. Ashfaq, A., and Ianakiev, A. (2018). Cost-minimised design of a highly renewable heating
+1107
+network for fossil-free future. Energy 152, 613–626. doi: 10.1016/j.energy.2018.03.155.
+1108
+47. Zhang, X., Strbac, G., Teng, F., and Djapic, P. (2018). Economic assessment of alternative
+1109
+heat decarbonisation strategies through coordinated operation with electricity system – uk
+1110
+case study. Applied Energy 222, 79–91. doi: 10.1016/j.apenergy.2018.03.140.
+1111
+48. Few, S., Djapic, P., Strbac, G., Nelson, J., and Candelise, C. (2024). A geographically dis-
+1112
+aggregated approach to integrate low-carbon technologies across local electricity networks.
+1113
+Nature Energy 9, 871–882. doi: 10.1038/s41560-024-01542-6.
+1114
+49. Navidi, T., Gamal, A.E., and Rajagopal, R. (2023). Coordinating distributed energy re-
+1115
+sources for reliability can significantly reduce future distribution grid upgrades and peak
+1116
+load. Joule 7, 1769–1792. doi: 10.1016/j.joule.2023.06.015.
+1117
+33
+50. Ehsan, A., and Preece, R. (2022). Quantifying the impacts of heat decarbonisation path-
+1118
+ways on the future electricity and gas demand. Energy 254. doi: 10.1016/j.energy.2022.
+1119
+124229.
+1120
+51. Aunedi, M., Pantaleo, A.M., Kuriyan, K., Strbac, G., and Shah, N. (2020). Modelling of
+1121
+national and local interactions between heat and electricity networks in low-carbon energy
+1122
+systems. Applied Energy 276. doi: 10.1016/j.apenergy.2020.115522.
+1123
+52. Ilyushin, P., Filippov, S., and Suslov, K. (2024). Features of planning and managing power
+1124
+flows in distribution grids of megalopolises. Renewable Energy 235, 121330. doi: https:
+1125
+//doi.org/10.1016/j.renene.2024.121330.
+1126
+53. Rajakovic, N., Ivanovi´c, B., Bjelic, I.B., and Raji´c, T. (2025). Coupling of the planning and
+1127
+power system analysis software for high-level penetration of renewable energy sources.
+1128
+Energy Conversion and Management: X 28, 101298. doi: https://doi.org/10.1016/j.
+1129
+ecmx.2025.101298.
+1130
+54. Widl, E., Cronbach, D., Sorknæs, P., Fit´o, J., Muschick, D., Repetto, M., Ramousse, J., and
+1131
+Ianakiev, A. (2022). Expert survey and classification of tools for modeling and simulating
+1132
+hybrid energy networks. Sustainable Energy, Grids and Networks 32, 100913. doi: https:
+1133
+//doi.org/10.1016/j.segan.2022.100913.
+1134
+55. Chang, M., Lund, H., Thellufsen, J.Z., and Østergaard, P.A. (2023). Perspectives on
+1135
+purpose-driven coupling of energy system models.
+Energy 265, 126335. doi: https:
+1136
+//doi.org/10.1016/j.energy.2022.126335.
+1137
+56. Voll, P., Jennings, M., Hennen, M., Shah, N., and Bardow, A. (2015). The optimum is not
+1138
+enough: A near-optimal solution paradigm for energy systems synthesis. Energy 82, 446–
+1139
+456. doi: https://doi.org/10.1016/j.energy.2015.01.055.
+1140
+57. Neumann, F., and Brown, T. (2023). Broad ranges of investment configurations for renew-
+1141
+able power systems, robust to cost uncertainty and near-optimality. iScience 26, 106702.
+1142
+doi: https://doi.org/10.1016/j.isci.2023.106702.
+1143
+58. Sinha, A., Venkatesh, A., Jordan, K., Wade, C., Eshraghi, H., de Queiroz, A.R., Jaramillo,
+1144
+P., and Johnson, J.X. (2024). Diverse decarbonization pathways under near cost-optimal
+1145
+futures. Nature Communications 15, 8165. doi: 10.1038/s41467-024-52433-z.
+1146
+59. Lygnerud, K., and Werner, S. (2018). Risk assessment of industrial excess heat recovery in
+1147
+district heating systems. Energy 151, 430–441. doi: https://doi.org/10.1016/j.energy.
+1148
+2018.03.047.
+1149
+60. Cousse, J., Trutnevyte, E., and Hahnel, U.J. (2021). Tell me how you feel about geothermal
+1150
+energy: Affect as a revealing factor of the role of seismic risk on public acceptance. Energy
+1151
+Policy 158, 112547. doi: https://doi.org/10.1016/j.enpol.2021.112547.
+1152
+61. Sneum, D.M., Billerbeck, A., Kachirayil, F., and McKenna, R. (2025). Barriers to district
+1153
+heating deployment: insights from literature and experts. Energy Policy 206, 114780. doi:
+1154
+https://doi.org/10.1016/j.enpol.2025.114780.
+1155
+62. Lombardi, F., Pickering, B., and Pfenninger, S. (2023). What is redundant and what is not?
+1156
+computational trade-offs in modelling to generate alternatives for energy infrastructure de-
+1157
+ployment. Applied Energy 339, 121002. doi: https://doi.org/10.1016/j.apenergy.2023.
+1158
+121002.
+1159
+34
+63. Lombardi, F., van Greevenbroek, K., Grochowicz, A., Lau, M., Neumann, F., Patankar, N.,
+1160
+and V˚ager¨o, O. (2025). Near-optimal energy planning strategies with modeling to generate
+1161
+alternatives to flexibly explore practically desirable options. Joule 9, 102144. doi: https:
+1162
+//doi.org/10.1016/j.joule.2025.102144.
+1163
+64. Doh Dinga, C., and van Rijn, S. (2026).
+Technology configurations for decarbonizing
+1164
+residential heat supply through district heating and implications for the electricity net-
+1165
+work (dataset). Zenodo. URL: https://doi.org/10.5281/zenodo.18943509. doi: 10.5281/
+1166
+zenodo.18943509.
+1167
+65. Doh Dinga, C., and van Rijn, S. (2026). Technology configurations for decarbonizing resi-
+1168
+dential heat supply through district heating and implications for the electricity network (soft-
+1169
+ware). Zenodo. URL: https://doi.org/10.5281/zenodo.18943449. doi: 10.5281/zenodo.
+1170
+18943449.
+1171
+66. Bekkering, J., and Nap, J.P. (2023). Energy self-sufficiency and sustainability in a defined
+1172
+neighbourhood: Bio-methanation to green gas can outperform green hydrogen. Energy
+1173
+Conversion and Management 292. doi: 10.1016/j.enconman.2023.117370.
+1174
+67. Wu, F., and Pfenninger, S. (2023). Challenges and opportunities for bioenergy in europe:
+1175
+National deployment, policy support, and possible future roles.
+Bioresource Technol-
+1176
+ogy Reports 22, 101430. URL: https://www.sciencedirect.com/science/article/pii/
+1177
+S2589014X23001019. doi: https://doi.org/10.1016/j.biteb.2023.101430.
+1178
+68. Millinger, M., Hedenus, F., Zeyen, E., Neumann, F., Reichenberg, L., and Berndes, G.
+1179
+(2025). Diversity of biomass usage pathways to achieve emissions targets in the european
+1180
+energy system. Nature Energy 10, 226–242. doi: 10.1038/s41560-024-01693-6.
+1181
+69. Grecu, N., Str¨omer, S., Schmidt, R.R., Maggauer, K., Marx, N., Mayr, B., and Liu, W. (2025).
+1182
+Decarbonizing a polish district heating network using ambient and waste heat: a techno-
+1183
+economic analysis considering uncertainties in future energy prices and availability. Energy
+1184
+329. doi: 10.1016/j.energy.2025.136641.
+1185
+70. Oldershaw, J., Morrell, G., Besseling, J., and Slater, S. (2016). Barriers and enablers to
+1186
+recovering surplus heat in industry: a qualitative study of the experiences of heat recovery
+1187
+in the UK energy intensive industries. .
+1188
+71. Lygnerud, K., Klugman, S., Fransson, N., and Nilsson, J. (2022). Risk assessment of indus-
+1189
+trial excess heat collaborations – empirical data from new and ongoing installations. Energy
+1190
+255, 124452. doi: https://doi.org/10.1016/j.energy.2022.124452.
+1191
+72. Spampatti, T., Hahnel, U.J., Trutnevyte, E., and Brosch, T. (2022). Short and long-term
+1192
+dominance of negative information in shaping public energy perceptions: The case of shal-
+1193
+low geothermal systems. Energy Policy 167, 113070. doi: https://doi.org/10.1016/j.
+1194
+enpol.2022.113070.
+1195
+73. Lombardi, F., Pickering, B., Colombo, E., and Pfenninger, S. (2020). Policy decision support
+1196
+for renewables deployment through spatially explicit practically optimal alternatives. Joule
+1197
+4, 2185–2207. doi: https://doi.org/10.1016/j.joule.2020.08.002.
+1198
+74. van Greevenbroek, K., Grochowicz, A., Zeyringer, M., and Benth, F.E. (2025). Trading off
+1199
+regional and overall energy system design flexibility in the net-zero transition. Nature Sus-
+1200
+tainability 8, 629–641. doi: 10.1038/s41893-025-01556-2.
+1201
+35
+75. Netbeheer Nederland (2023). 2030–2050 integrated infrastructure outlook. The Nether-
+1202
+lands:
+Netbeheer Nederland.
+https://www.netbeheernederland.nl/sites/default/
+1203
+files/II3050_eindrapport__286.pdf.
+1204
+76. Lund, H., Østergaard, P.A., Sorknæs, P., Nielsen, S., Skov, I.R., Yuan, M., Thel-
+1205
+lufsen, J.Z., Mathiesen, B.V., Benson, S.M., Jentsch, A. et al. (2025). District heating in
+1206
+clean energy systems.
+Nature Reviews Clean Technology 1, 532–546. doi: 10.1038/
+1207
+s44359-025-00076-8.
+1208
+77. Hennig, R.J., de Vries, L.J., and Tindemans, S.H. (2023). Congestion management in elec-
+1209
+tricity distribution networks: Smart tariffs, local markets and direct control. Utilities Policy
+1210
+85, 101660. doi: https://doi.org/10.1016/j.jup.2023.101660.
+1211
+78. Bossmann, T., Attard, K., Verrier, L., and Fourni´e, L. (2018). Cost-efficient district heating
+1212
+development. Brussels: European Commission, Directorate-General for Energy. METIS
+1213
+Study S9. Available at:
+https://ec.europa.eu/energy/sites/ener/files/documents/
+1214
+mj0419410enn.en.pdf.
+1215
+79. Pena-Bello, A., Schuetz, P., Berger, M., Worlitschek, J., Patel, M.K., and Parra, D. (2021).
+1216
+Decarbonizing heat with pv-coupled heat pumps supported by electricity and heat storage:
+1217
+Impacts and trade-offs for prosumers and the grid. Energy Conversion and Management
+1218
+240. doi: 10.1016/j.enconman.2021.114220.
+1219
+80. Thomas, G., Pidgeon, N., and Henwood, K. (2023). Hydrogen, a less disruptive pathway for
+1220
+domestic heat? exploratory findings from public perceptions research. Cleaner Production
+1221
+Letters 5, 100047. doi: https://doi.org/10.1016/j.clpl.2023.100047.
+1222
+81. Rosenow, J. (2022). Is heating homes with hydrogen all but a pipe dream? an evidence
+1223
+review. Joule 6, 2225–2228. URL: https://www.sciencedirect.com/science/article/
+1224
+pii/S2542435122004160. doi: https://doi.org/10.1016/j.joule.2022.08.015.
+1225
+82. Kurses, M., Olympios, A.V., Harraz, A.A., and Xu, J. (2025). Comparative analysis of heating
+1226
+and cooling solutions for residential use: Energy, environmental, and economic perspec-
+1227
+tives.
+Applied Energy 399, 126511. doi: https://doi.org/10.1016/j.apenergy.2025.
+1228
+126511.
+1229
+83. Daniilidis, A., Mindel, J.E., De Oliveira Filho, F., and Guglielmetti, L. (2022). Techno-
+1230
+economic assessment and operational co2 emissions of high-temperature aquifer thermal
+1231
+energy storage (ht-ates) using demand-driven and subsurface-constrained dimensioning.
+1232
+Energy 249, 123682. doi: https://doi.org/10.1016/j.energy.2022.123682.
+1233
+84. van der Roest, E., Beernink, S., Hartog, N., van der Hoek, J.P., and Bloemendal, M. (2021).
+1234
+Towards sustainable heat supply with decentralized multi-energy systems by integration of
+1235
+subsurface seasonal heat storage. Energies 14. doi: 10.3390/en14237958.
+1236
+85. Heubaum, H., Brandon, C., Tanner, T., Surminski, S., and Roezer, V. (2021). The triple divi-
+1237
+dend of building climate resilience: taking stock, moving forward. World Resources Institute.
+1238
+Available at: https://doi.org/10.46830/wriwp.21.00154.
+1239
+86. SURF (n.d.). Snellius: the national supercomputer. . Available at: https://www.surf.nl/
+1240
+en/services/compute/snellius-the-national-supercomputer. Accessed February 23,
+1241
+2026.
+1242
+36
+87. Lombardi, F., and Pfenninger, S. (2025). Human-in-the-loop MGA to generate energy
+1243
+system design options matching stakeholder needs.
+PLOS Climate 4, e0000560. doi:
+1244
+10.1371/journal.pclm.0000560.
+1245
+88. M¨older, F., Jablonski, K.P., Letcher, B., and et al. (2021). Sustainable data analysis with
+1246
+Snakemake. F1000Research 10, 33. doi: 10.12688/f1000research.29032.1.
+1247
+89. Brown, T., H¨orsch, J., and Schlachtberger, D. (2018). PyPSA: Python for Power System
+1248
+Analysis. Journal of Open Research Software 6. URL: https://doi.org/10.5334/jors.
+1249
+188. doi: 10.5334/jors.188. arXiv:1707.09913.
+1250
+90. Neumann, F., Zeyen, E., Victoria, M., and Brown, T. (2023). The potential role of a hydrogen
+1251
+network in europe. Joule 7, 1793–1817. doi: 10.1016/j.joule.2023.06.016.
+1252
+91. Lau, M., Patankar, N., and Jenkins, J.D. (2024). Measuring exploration: evaluation of mod-
+1253
+elling to generate alternatives methods in capacity expansion models. Environmental Re-
+1254
+search: Energy 1, 045004. doi: 10.1088/2753-3751/ad7d10.
+1255
+92. Thurner, L., Scheidler, A., Sch¨afer, F., Menke, J., Dollichon, J., Meier, F., Meinecke, S.,
+1256
+and Braun, M. (2018). pandapower — an open-source python tool for convenient modeling,
+1257
+analysis, and optimization of electric power systems. IEEE Transactions on Power Systems
+1258
+33, 6510–6521. doi: 10.1109/TPWRS.2018.2829021.
+1259
+93. Quintel
+Intelligence
+(2025).
+Energy
+transition
+model.
+.
+URL:
+https://
+1260
+energytransitionmodel.com/ accessed: 2026-03-05.
+1261
+94. Lensink, S., Eggink, E., Schoots, K., van den Berg, J., van Dam, D., Elzinga, H., Hen-
+1262
+riquez, C., Mugge, M., Blok, J., Plomp, A. et al. (2025).
+Final recommendation on ba-
+1263
+sic amounts for SDE++ 2025. The Hague: PBL Netherlands Environmental Assessment
+1264
+Agency. PBL publication number 5472. Available at: https://www.pbl.nl/system/files/
+1265
+document/2025-02/pbl-2025-eindadvies-sde-plus-plus-2025-5472.pdf.
+1266
+37
+SUPPLEMENTAL INFORMATION
+1267
+Technology configurations for decarbonizing residential heat supply through district heat-
+1268
+ing and implications for the electricity network
+1269
+Christian Doh Dinga, Francesco Lombardi, Roald Arkesteijn, Arjan van Voorden, Sander van
+1270
+Rijn, , Laurens J. de Vries, and Milos Cvetkovic
+1271
+CHP2-G
+CHP1-G
+Gas 
+source
+Heat sink
+TES
+GB
+EB
+Geo1
+Geo2
+Geo3
+Geo4
+GB
+Den Haag
+Waste 
+source
+Residual heat 
+point-V
+ASHP
+Geo2
+GB
+HB
+TES
+Electricity 
+source
+Residual heat 
+RDAM1
+Pipe9
+GB
+TES
+TES
+Geo
+TES
+Load
+Load
+Load
+Load
+Pipe10
+Electricity 
+sink
+WtE
+WarmtelinQ
+CR Plein
+Tuinders
+Tuinders transit
+B-triangle
+Boszoom
+Roca
+Rotterdam2
+Rotterdam1
+Point-V
+LoN
+Gas 
+source
+Gas 
+source
+Gas 
+source
+Pipe11
+Pipe13
+Pipe12
+Pipe14
+Pipe15
+Pipe8
+Pipe7
+Pipe6
+Pipe5
+Pipe4
+Pipe3
+Pipe2
+Pipe1
+Electricity 
+sink
+Heat
+sink
+CHP1-G
+CHP2-G
+CHP3-G
+ASHP
+HB
+EB
+ASHP
+HT-ATES
+HT-ATES
+TES
+HB
+Electricity 
+source
+EB
+ASHP
+HT-ATES
+GB
+Gas 
+source
+HB
+GB
+Gas 
+source
+HB
+Solar 
+thermal
+HT-ATES
+Electricity 
+source
+Electricity 
+source
+EB
+HB
+Electricity 
+source
+HT-ATES
+EB
+ASHP
+CHP1-H
+CHP2-H
+CHP1-H
+CHP2-H
+CHP3-H
+Geo1
+• 
+EB: Electric boiler
+• 
+HB: Hydrogen boiler
+• 
+GB: Green gas boiler
+• 
+WtE: Waste-to-energy
+• 
+Geo: Geothermal heat source
+• 
+CHP-G: CHP-green gas
+• 
+CHP-H: CHP-hydrogen
+• 
+AHSP: Air source heat pump
+• 
+TES: Thermal energy storage (short-term)
+• 
+HT-ATES: High-temperature aquifer TES
+Figure S1. District heating network
+1272
+38
+380/150kV Krimpen 
+380/150kV Watemingen
+External grid
+150/25kV
+Rijswijk
+25/10kV
+Laagveen
+150/25kV
+sGravenhage
+25/10kV
+HVS
+Centrale
+T_Voorburg
+150/25kV
+25/23kV
+Nootdorp2
+25/10kV
+Noordsingel
+23/10kV
+Nootdorp2
+150/25kV 
+RoCa
+T_Ommoord
+150/25kV
+25/10kV
+Ommoord
+25/10kV
+Bleiswijk
+150kV_RoCa
+150/23kV
+Zuidwijk
+E1
+E2
+E3
+E4
+E5
+E6
+E7
+E8
+E9
+B1
+B2
+B3
+B4
+B5
+B6
+B7
+B8
+B9
+B13
+B10
+B11
+B12
+B14
+B15
+B16
+B17
+B18
+B19
+B34
+B21
+B20
+B30
+B24
+B25
+B27
+B29
+B28
+B26
+B32
+B33
+B31
+B23
+B22
+B1   :
+B2   :
+B3   :
+B4   :
+B5   :
+B6   :
+B7   :
+B8   :
+B9   :
+B10 :
+B11 :
+150kV_Waterningen
+150kV_Rijswijk
+25kV_HVS_Zuid
+25kV_Laagveen
+10kV_Laagveen
+10kV_DH_1
+150_kV_sGravenhage
+25kV_HVS_Centrale
+10kV_HVS_Centrale
+25kV_DH_CHP
+25kV_DH_HP
+B12 :
+B13 :
+B14 :
+B15 :
+B16 :
+B17 :
+B18 :
+B19 :
+B20 :
+B21 :
+B22 :
+25kV_DH_EB
+10kV_DH_2
+Voorburg_150kV
+25kV_HVS_Oost
+25kV_Nootdorp2
+25kV_ Noordsingel
+10kV_Nootdorp2
+10kV_Noordsingel
+10kV_DH_3
+10kV_DH_4
+150kV_Krimpen
+B23 :
+B24 :
+B25 :
+B26 :
+B27 :
+B28 :
+B29 :
+B30 :
+B31 :
+B32 :
+B33 :
+B34 :
+150kV_Ommoord
+25kV_Ommoord
+25kV_Bleiswijk
+10kV_Bleiswijk
+10kV_Ommoord
+10kV_Tuinders
+10kV_RDAM
+25kV_RoCa
+150kV_Zuidwijk
+23kV_Zuidwijk
+23kV_RDAM
+23kV_Nootdorp2
+Transformer
+Electricity 
+lines/cables
+Electricity
+bus
+Non-DHN 
+electricity 
+demand
+Electricity 
+demand
+from DHN
+Electricity 
+supply
+from DHN
+Figure S2. Electricity network
+1273
+Figure S3. Projected heat demand by 2050
+1274
+39
+Figure S4. Electricity price
+1275
+Figure S5. Hydrogen price
+1276
+40
+Figure S6. Green gas, waste material, and residual heat price
+1277
+Figure S7. Solar thermal capacity factor
+1278
+41
+Figure S8. Ambient temperature
+1279
+Figure S9. Air-source heat pump coefficient of performance
+1280
+42
+Figure S10. Spatial deployment of geothermal heat sources in the least-cost solution
+1281
+Figure S11. Heat dispatch duration curve and annual share of heat supply per
+technology category in the least-cost solution
+1282
+43
+Figure S12. Loading duration curves of all transformers in the electricity network
+1283
+44
+Figure S13. Loading duration curves of all lines in the electricity network
+1284
+45
+Figure S14. Voltage magnitude histograms of all buses in the electricity network
+1285
+46
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+Least-cost
+Highest CHP-greengas
+Highest CHP-hydrogen
+Highest solar thermal
+Highest HT-ATES storage
+Other SPORES
+Figure S15. Trade-offs associated with maximizing technologies with low-utilization
+frequencies across SPORES
+1286
+47
+Highest CHP-greengas
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Deployed capacity  [MW]
+0
+100
+200
+300
+400
+500
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Highest CHP-hydrogen
+0
+200
+400
+600
+800
+1000
+1200
+1400
+0
+100
+200
+300
+400
+500
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Highest solar thermal
+Primary
+supply
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Deployed capacity  [MW]
+Storage 
+discharge
+0
+100
+200
+300
+400
+500
+Heat 
+pipeline
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Highest HT-ATES storage
+Primary
+supply
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Storage 
+discharge
+0
+100
+200
+300
+400
+500
+Heat 
+pipeline
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Residual heat
+Solar thermal
+Waste-to-energy
+Storage-HT-ATES
+Storage-TES
+Heat pipeline
+Figure S16. Technology configurations under maximum build-out of technologies with
+low-utilization frequencies across SPORES
+1287
+48
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+Least-cost
+Lowest electrification
+Low electrification
+High electrification
+Highest electrification
+Other SPORES
+Figure S17. Trade-offs across highlighted SPORES with varying degrees of heat
+electrification
+1288
+49
+Lowest electrification
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Deployed capacity  [MW]
+0
+100
+200
+300
+400
+500
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Low electrification
+0
+200
+400
+600
+800
+1000
+1200
+1400
+0
+100
+200
+300
+400
+500
+0
+100
+200
+300
+400
+500
+600
+700
+800
+High electrification
+Primary
+supply
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Deployed capacity  [MW]
+Storage 
+discharge
+0
+100
+200
+300
+400
+500
+Heat 
+pipeline
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Highest electrification
+Primary
+supply
+0
+200
+400
+600
+800
+1000
+1200
+1400
+Storage 
+discharge
+0
+100
+200
+300
+400
+500
+Heat 
+pipeline
+0
+100
+200
+300
+400
+500
+600
+700
+800
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Residual heat
+Solar thermal
+Waste-to-energy
+Storage-HT-ATES
+Storage-TES
+Heat pipeline
+Figure S18. Technology configurations for highlighted SPORES with varying degrees of
+heat electrification
+1289
+50
+Figure S19. Range of transformer loading duration across all SPORES
+1290
+51
+Figure S20. Range of line loading duration across all SPORES
+1291
+52
+Figure S21. Frequency distribution of potential capacity utilization in the near-optimal
+decision space with lower grid loading SPORES highlighted: default scenario with 10%
+cost slack
+1292
+53
+Figure S22. Integrated decision space under technology deployment constraints: default
+scenario with 10% cost slack
+1293
+54
+Sensitivity analysis results
+1294
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+All options available
+Least-cost
+SPORES
+SPORES with lower EDN stress
+Figure S23. Frequency distribution of potential capacity utilization in the near-optimal
+decision space with lower grid loading SPORES highlighted: 5% cost slack scenario
+1295
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+All options available
+Least-cost
+SPORES
+SPORES with lower EDN stress
+Figure S24. Frequency distribution of potential capacity utilization in the near-optimal
+decision space with lower grid loading SPORES highlighted: 15% cost slack scenario
+1296
+55
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+All options available
+Least-cost
+SPORES
+SPORES with lower EDN stress
+Figure S25. Frequency distribution of potential capacity utilization in the near-optimal
+decision space with lower grid loading SPORES highlighted: warm weather year
+scenario
+1297
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+All options available
+Least-cost
+SPORES
+SPORES with lower EDN stress
+Figure S26. Frequency distribution of potential capacity utilization in the near-optimal
+decision space with lower grid loading SPORES highlighted: cold weather year scenario
+1298
+56
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+All options available
+Least-cost
+SPORES
+SPORES with lower EDN stress
+Figure S27. Frequency distribution of potential capacity utilization in the near-optimal
+decision space with lower grid loading SPORES highlighted: low heat demand scenario
+1299
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+All options available
+Least-cost
+SPORES
+SPORES with lower EDN stress
+Figure S28. Frequency distribution of potential capacity utilization in the near-optimal
+decision space with lower grid loading SPORES highlighted: high heat demand scenario
+1300
+57
+Power-to-heat 
+capacity
+Gas-based 
+capacity
+Non-
+dispatchable 
+capacity
+Storage 
+capacity
+Pipeline 
+capacity
+Levelized 
+ cost of heat
+Line overload 
+ events
+# overloaded 
+ lines
+Line loading
+Trafo overload 
+ events
+# overloaded 
+ trafos
+Trafo loading
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Metric score (Min-max normalized performance)
+Figure S29. Integrated decision space: 5% cost slack scenario
+1301
+Power-to-heat 
+capacity
+Gas-based 
+capacity
+Non-
+dispatchable 
+capacity
+Storage 
+capacity
+Pipeline 
+capacity
+Levelized 
+ cost of heat
+Line overload 
+ events
+# overloaded 
+ lines
+Line loading
+Trafo overload 
+ events
+# overloaded 
+ trafos
+Trafo loading
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Metric score (Min-max normalized performance)
+Figure S30. Integrated decision space: 15% cost slack scenario
+1302
+58
+Power-to-heat 
+capacity
+Gas-based 
+capacity
+Non-
+dispatchable 
+capacity
+Storage 
+capacity
+Pipeline 
+capacity
+Levelized 
+ cost of heat
+Line overload 
+ events
+# overloaded 
+ lines
+Line loading
+Trafo overload 
+ events
+# overloaded 
+ trafos
+Trafo loading
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Metric score (Min-max normalized performance)
+Figure S31. Integrated decision space: warm weather year scenario
+1303
+Power-to-heat 
+capacity
+Gas-based 
+capacity
+Non-
+dispatchable 
+capacity
+Storage 
+capacity
+Pipeline 
+capacity
+Levelized 
+ cost of heat
+Line overload 
+ events
+# overloaded 
+ lines
+Line loading
+Trafo overload 
+ events
+# overloaded 
+ trafos
+Trafo loading
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Metric score (Min-max normalized performance)
+Figure S32. Integrated decision space: cold weather year scenario
+1304
+59
+Power-to-heat 
+capacity
+Gas-based 
+capacity
+Non-
+dispatchable 
+capacity
+Storage 
+capacity
+Pipeline 
+capacity
+Levelized 
+ cost of heat
+Line overload 
+ events
+# overloaded 
+ lines
+Line loading
+Trafo overload 
+ events
+# overloaded 
+ trafos
+Trafo loading
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Metric score (Min-max normalized performance)
+Figure S33. Integrated decision space: low heat demand scenario
+1305
+Power-to-heat 
+capacity
+Gas-based 
+capacity
+Non-
+dispatchable 
+capacity
+Storage 
+capacity
+Pipeline 
+capacity
+Levelized 
+ cost of heat
+Line overload 
+ events
+# overloaded 
+ lines
+Line loading
+Trafo overload 
+ events
+# overloaded 
+ trafos
+Trafo loading
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Metric score (Min-max normalized performance)
+Figure S34. Integrated decision space: high heat demand scenario
+1306
+60
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No geothermal
+No residual heat
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No solar thermal
+No HT-ATES
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+Limited gas (20% peak demand)
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+Limited e-boiler (20% peak demand)
+Least-cost
+Feasible SPORES (subject to scenario constraint)
+Feasible SPORES with lower EDN stress
+Figure S35. Trade-offs under local technology deployment constraints: 5% cost slack
+scenario
+1307
+61
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No geothermal
+No residual heat
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No solar thermal
+No HT-ATES
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+Limited gas (20% peak demand)
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+Limited e-boiler (20% peak demand)
+Least-cost
+Feasible SPORES (subject to scenario constraint)
+Feasible SPORES with lower EDN stress
+Figure S36. Trade-offs under local technology deployment constraints: 15% cost slack
+scenario
+1308
+62
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No geothermal
+No residual heat
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No solar thermal
+No HT-ATES
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+Limited gas (20% peak demand)
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+Limited e-boiler (20% peak demand)
+Least-cost
+Feasible SPORES (subject to scenario constraint)
+Feasible SPORES with lower EDN stress
+Figure S37. Trade-offs under local technology deployment constraints: warm weather
+year scenario
+1309
+63
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No geothermal
+No residual heat
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No solar thermal
+No HT-ATES
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+Limited gas (20% peak demand)
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+Limited e-boiler (20% peak demand)
+Least-cost
+Feasible SPORES (subject to scenario constraint)
+Feasible SPORES with lower EDN stress
+Figure S38. Trade-offs under local technology deployment constraints: cold weather
+year scenario
+1310
+64
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No geothermal
+No residual heat
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No solar thermal
+No HT-ATES
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+Limited gas (20% peak demand)
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+Limited e-boiler (20% peak demand)
+Least-cost
+Feasible SPORES (subject to scenario constraint)
+Feasible SPORES with lower EDN stress
+Figure S39. Trade-offs under local technology deployment constraints: low heat demand
+scenario
+1311
+65
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No geothermal
+No residual heat
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+No solar thermal
+No HT-ATES
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Utilization of potential capacity
+Limited gas (20% peak demand)
+Air heat pump
+Boiler-greengas
+Boiler-hydrogen
+CHP-greengas
+CHP-hydrogen
+Electric boiler
+Geothermal
+Heat pipeline
+Residual heat
+Solar thermal
+Storage-HT-ATES
+Storage-TES
+Waste-to-energy
+Limited e-boiler (20% peak demand)
+Least-cost
+Feasible SPORES (subject to scenario constraint)
+Feasible SPORES with lower EDN stress
+Figure S40. Trade-offs under local technology deployment constraints: high heat
+demand scenario
+1312
+66
+all
+complete_heat_results_plots
+plot_heat_results_for_each_spores
+run_heat_model_for_each_spores
+plot_spores_summary_heat_system
+prepare_pprofiles_from_heat_model_run
+prepare_heat_inputs_shared
+run_heat_model_lc_shared
+add_heat_assets_to_base_elec_network
+plot_heat_results_lc_shared
+prepare_pprofiles_from_heat_model_run_lc_shared
+plot_elec_results_base
+plot_elec_results_lc_shared
+plot_elec_results_for_each_spores
+run_elec_model_base
+copy_base_elec_network
+prepare_pprofiles_substations
+run_elec_model_lc_shared
+run_elec_model_for_each_spores
+Figure S41. Directed acyclic graph of the model workflow for each scenario
+Directed acyclic graph of jobs executed for each scenario, illustrating the simplified high-level
+workflow from raw data processing to generation of SPORES, running the DHN model for each
+SPORE, executing the power flow simulations, and quantifying electricity network impacts. The
+loop rule run heat model for each spores corresponds to the generation of 515 SPORES per
+scenario, through intensification and diversification of DHN technology deployment.
+1313
+Table S1. District heating technology parameters
+1314
+Technology
+Parameter
+Value
+Unit
+Central air-source heat
+pump
+investment
+2,039,000
+C/MW th
+COP
+temperature-dependent
+–
+lifetime
+15
+years
+Central CHP (green gas)
+investment cost
+2,000,000
+C/MW th
+heat efficiency
+0.45
+–
+electric efficiency
+0.45
+–
+lifetime
+15
+years
+Central CHP (hydrogen)
+investment cost
+2,100,000
+C/MW th
+heat efficiency
+0.45
+–
+electric efficiency
+0.45
+–
+lifetime
+15
+years
+Central electric boiler
+investment cost
+305,000
+C/MW th
+efficiency
+0.9
+–
+lifetime
+15
+years
+Central gas boiler (green
+gas)
+investment cost
+200,000
+C/MW th
+Continued on next page
+67
+Technology
+Parameter
+Value
+Unit
+efficiency
+0.8
+–
+lifetime
+15
+years
+Central gas boiler (hy-
+drogen)
+investment cost
+270,000
+C/MW th
+efficiency
+0.7
+–
+lifetime
+15
+years
+Central (deep) geother-
+mal heat
+investment cost
+2,500,000
+C/MW th
+lifetime
+15
+years
+Seasonal performance factor
+6
+–
+Central
+solar
+thermal
+heat
+investment cost
+435,000
+C/MW th
+lifetime
+15
+years
+High-temperature resid-
+ual heat
+investment cost
+1,200,000
+C/MW th
+lifetime
+15
+years
+Central short-term stor-
+age (TES)
+investment cost
+250,000
+C/MW
+energy-to-power ratio
+6
+hours
+charge efficiency
+0.99
+–
+discharge efficiency
+0.99
+–
+lifetime
+30
+years
+Seasonal storage (HT-
+ATES)
+investment cost
+199,550
+C/MW
+charge efficiency
+1
+–
+discharge efficiency
+1
+–
+round-trip efficiency
+0.7
+–
+full load hours
+3,000
+hours
+Seasonal performance factor
+50
+–
+lifetime
+30
+years
+Heat distribution pipeline
+(high-temperature
+net-
+work)
+investment cost
+100
+C/MW/m
+maximum capacity
+250
+MW
+losses
+0.00001
+%/m
+lifetime
+30
+years
+Waste
+incinerator
+(waste-to-energy)
+investment cost
+600,000
+C/MW
+efficiency
+0.80
+–
+lifetime
+15
+years
+68

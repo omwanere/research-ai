@@ -1,0 +1,970 @@
+Compiling Temporal Numeric Planning into Discrete PDDL+:
+Extended Version*
+Andrea Micheli1, Enrico Scala2, Alessandro Valentini1
+1Fondazione Bruno Kessler, Trento, Italy
+2University of Brescia, Italy
+amicheli@fbk.eu, enrico.scala@unibs.it, alvalentini@fbk.eu
+Abstract
+Since the introduction of the PDDL+ modeling language,
+it was known that temporal planning with durative actions
+(as in PDDL 2.1) could be compiled into PDDL+. However,
+no practical compilation was presented in the literature ever
+since. We present a practical compilation from temporal plan-
+ning with durative actions into PDDL+, fully capturing the
+semantics and only assuming the non-self-overlapping of ac-
+tions. Our compilation is polynomial, retains the plan length
+up to a constant factor and is experimentally shown to be of
+practical relevance for hard temporal numeric problems.
+Introduction
+Automated planning is the task of finding a course of ac-
+tions to achieve a goal from an initial state given a model of
+the system specifying which actions are available, together
+with (i) their precondition, what needs to hold in order for
+an action to be applicable and (ii) their effect, what needs
+to hold when such actions are applied. Temporal planning is
+the extension in which actions are assumed to last for some
+interval of time, and so we look for a plan that is schedula-
+ble too, i.e., actions need to be done in specific points over
+a potentially unbounded timeline, with conditions required
+to hold at the beginning, at the end and during the execution
+of the action. Temporal planning problems can be compactly
+represented in the PDDL 2.1 language (Fox and Long 2003).
+A number of solutions have been proposed to han-
+dle PDDL2.1 problems, ranging from forward heuristic
+search in the space of possible schedules (Coles et al.
+2010; Benton, Coles, and Coles 2012; Valentini, Micheli,
+and Cimatti 2020) to satisfiability-based bounded reduc-
+tions (Cardellini and Giunchiglia 2025). Among these ap-
+proaches, compilation-based techniques are particularly ap-
+pealing, as they allow temporal reasoning to be delegated to
+more expressive or better-supported target languages. Build-
+ing on this line of work, this paper studies a compilation
+method that transforms a temporal planning problem speci-
+fied in PDDL2.1 into an equivalent formulation in PDDL+.
+PDDL+ is yet another extension of classical planning
+which provides a different take to the problem of represent-
+*This paper is an extended version of the homonymous ap-
+pearing in the ICAPS 2026 proceedings. This version provides the
+proofs and addidional explanations of the compilation.
+ing timed and hybrid systems. Instead of having durative ac-
+tions, in PDDL+ a system over time is modeled through a
+combination of processes, events and instantaneous actions.
+Processes model the system evolving over time through dif-
+ferential equations, and events dictate what needs to change
+instantaneously if some condition is satisfied.
+Our compilation is rooted in the known observation that a
+durative action can be compiled into a combination of pro-
+cesses and events/actions (Fox and Long 2006), but we con-
+tribute the first fully spelled-out formal account to approach
+this problem rigorously. Moreover, the expressiveness of
+PDDL+ makes it easier to extend the input problems with
+a number of features that are not well supported by many
+temporal planners, such as numeric state variables, delayed
+effects and timed initial literals. Our compilation provides
+a comprehensive account for the full semantics of temporal
+planning resulting in an encoding that is sound, complete
+and polynomial on the size of the input problem.
+To shed some light on the practical benefit of this com-
+pilation we run an experimental campaign on a number
+of temporal numeric domains. Surprisingly, PDDL+ plan-
+ners prove competitive, and often superior, to state-of-the-
+art temporal planners on rich numeric temporal problems.
+This may inform a more precise understanding of the core
+difficulties in temporal planning.
+Background
+We start by defining a temporal planning problem, adapting
+the PDDL 2.1 level 3 language (Fox and Long 2003)1.
+Definition 1. A temporal planning problem Pt is a tuple
+(F, X, I, Ai, Ad, G) where:
+• F is a finite set of boolean fluents (predicates);
+• X is a finite set of numeric rational fluents;
+• I : F ∪X →B ∪Q is the initial state, assigning each
+fluent to its initial value;
+• Ai is a finite set of instantaneous actions; each a ∈Ai
+has a precondition formula prea over F ∪X and a set of
+boolean and numeric effects eff a of the form f := {⊥, ⊤} if
+1We speculate that our compilation could be easily adapted to
+PDDL 2.1 level 4, hence including continuous change, but for the
+sake of simplicity we restrict the paper presentation to level 3.
+arXiv:2603.12188v1  [cs.AI]  12 Mar 2026
+f ∈F or f ←e with ←∈{:=, +=} and e being a numeric
+expression over X, if f ∈X.
+• Ad is a finite set of durative actions; each a ∈Ad has
+lower and upper duration bounds la ≤ua ∈Q>0, a pair
+of starting a⊢and ending a⊣instantaneous “snap” actions,
+and an overall invariant formula γa over F ∪X.
+• G is the goal expressed as a formula over F ∪X.
+We partition Ad into Afix ⊔Avar, with Afix = {a ∈Ad |
+la = ua} being the set of durative actions with a fixed du-
+ration (therefore, Avar is the set of durative actions with
+variable duration). Moreover, given a (snap) instantaneous
+action a, we write: V pre
+a
+def= vars(prea) for the set of flu-
+ents occurring in prea; V r
+a
+def= V pre
+a
+∪S
+(f←e)∈eff a vars(e)
+for the fluents read by the precondition or by any effect
+of a; V :=
+a
+def= S
+(f:=e)∈eff a{f} for the assigned fluents;
+V +=
+a
+def= S
+(f+=e)∈eff a{f} for the increased fluents; and
+V w
+a
+def= V :=
+a
+∪V +=
+a
+for the effected (written) fluents.
+Definition 2. A temporal plan πtis a finite set of triples of
+the form (t, a, d), where t ∈Q≥0 is the starting time, a ∈
+Ai ∪Ad is the action to execute and d ∈Q≥0 is the action
+duration, s.t. la ≤d ≤ua if a ∈Ad, and d = 0 if a ∈Ai.
+We present an adaptation of the non-self-overlapping se-
+mantics by Gigante et al. (2022). A state is a total assign-
+ment of values to fluents; given a formula e defined over
+F ∪X, we write s(e) for the value of e in s obtained by
+substitution and constant propagation. Given a state s and
+an instantaneous action a, a is applicable in s if s(prea) is
+true (s |= prea) and the successor state s′ def= a(s) is such
+that s′(f) = s(e) if f := e ∈eff a, s′(f) = s(f) + s(e) if
+f += e ∈eff a, s′(f) = s(f) otherwise.
+Let πt
+def= {(t1, a1, d1), . . . , (tn, an, dn)} be a temporal
+plan for a planning problem Pt = (F, X, I, Ai, Ad, G). Let
+Hπt be the set of timed (snap) actions for πt defined as
+{(ti, ai) | ai ∈Ai} ∪{(ti, ai,⊢) | ai ∈Ad} ∪{(ti +
+di, ai,⊣) | ai ∈Ad}. Let ts
+0, ts
+1, . . . , ts
+m−1 ∈Q be the times
+appearing in Hπt (that is, ∃(t, a) ∈Hπt.ts
+j = t) ordered
+s.t. ts
+j < ts
+j+1; moreover, we add an arbitrary final time:
+ts
+m
+def= ts
+m−1 + 1. We define the set of “happenings” at step j
+as the set Hj = {a | ts
+j = t and (a, t) ∈Hπt}. We can now
+give the semantics of temporal planning: the plan πt is valid
+if there exists a sequence of states s0, . . . , sm such that:
+1. s0 = I and sm |= G (initial state and goal constraints),
+2. for each 0 ≤j < m and each a ∈Hj, sj |= prea (all
+conditions for happenings at step j are satisfied);
+3. for each 0 ≤j < m, sj+1 = b0(b1(· · · bk(sj))), with
+Hj = {b0, b1, . . . , bk} for an arbitrary ordering (a state is
+the result of applying all the effects of all happenings);
+4. for each 1 ≤i ≤n with ai ∈Ad, if ts
+j = ti and ts
+k =
+ti + di, sw |= γ(ai) for all j < w ≤k (overall conditions);
+5. for each 0 ≤j < m and each pair of instantaneous ac-
+tions a ̸= b ∈Hj, V r
+a ∩V w
+b
+= V r
+b ∩V w
+a = V :=
+a
+∩V :=
+b
+= ∅
+(no interfering actions at the same time);
+6. For all j ̸= k ∈[1, n], tj > tk + dk or tk > tj + dj
+(no-self-overlapping constraint).
+The target of our compilation is a PDDL+ (Fox and Long
+2006) problem, formalized below.
+Definition 3. A PDDL+ problem is modeled as a tuple
+(F, X, I, G, A, E, P) where:
+• F is a finite set of boolean fluents (predicates);
+• X is a finite set of numeric rational fluents;
+• I : F ∪X →B ∪Q is the initial state, assigning each
+fluent to its initial value;
+• G is a goal condition expressed as a formula over F ∪X.
+• A, E are two finite sets of instantaneous actions and
+events resp.; each action/event x is defined by a set of pre-
+conditions prex and a set of effects eff x.
+• P is a set of processes each p ∈P having a precondition
+formula prep over F ∪X and a set of effects eff p of the form
+d
+dtf += e with f ∈X and e is a formula over X.
+Definition 4. A PDDL+ plan is a pair (π+, te), where te ∈
+Q is the plan makespan and π+ is a finite sequence of pairs
+(ti, ai) with ti ≤te ∈Q≥0.
+Following Percassi, Scala, and Vallati (2025), we assume
+a discretization time quantum δ ∈Q. A plan is well-formed
+if te and all times ti are multiples of δ. A plan (π+, te) is
+valid for a PDDL+ problem (F, X, I, G, A, E, P) if there
+exists a sequence of states (similarly to the temporal case)
+¯s0, . . . , ¯s ¯m with ¯s0 = I and ¯m = te
+δ defined as follows. Let
+¯ts
+j = δ · j be the time of state ¯sj and let the sequence of
+“action happenings” H a
+j at step j be the sequence of actions
+from π+ happening at time ¯ts
+j; i.e., H a
+j
+= (ai, . . . , ai+k)
+where (ti, ai), . . . , (ti+k, ai+k) is a maximal sub-sequence
+of π+ with ti = · · · = ti+k = ¯ts
+j. Given a state ¯s, we in-
+herit the definitions of action applicability from above and
+generalize them for events in the obvious way. We define
+the event completion of ¯s (written ¯s→) as the fixed-point
+state reached after applying any applicable event in ¯s and
+then any other applicable event in the resulting state, until
+no event is applicable anymore. For each j, we define the fi-
+nal state at step j as ¯send
+j
+def= b0(b1(· · · (bk(¯s→
+j )→)→)→with
+H a
+j = (b0, b1, . . . , bk) (intuitively, we apply all actions or-
+dered by π+ to the event completion of ¯sj and after every
+action we perform an event completion). We can now de-
+fine the state transition: for every 0 ≤j < ¯m, we define
+¯sj+1(f) = ¯send
+j
+(f) for every f ∈F, and for every x ∈X:
+¯sj+1(x) = ¯send
+j
+(x) +
+X
+p∈P, (x+=e)∈eff p
+¯send
+j
+|=prep
+¯send
+j
+(e) · δ
+Intuitively, we set every predicate to its final value at step
+j and compute the value of the numeric fluents after some
+passage of time by applying a discretized step aggregating
+the contribution of every active process. Finally, the plan is
+valid if ¯sm |= G, and each ai ∈H a
+j is applicable in ¯s→
+j .
+Compile Temporal Planning into PDDL+
+In this section, we formally define our compilation from
+temporal planning into PDDL+. Intuitively, we formulate
+a PDDL+ problem where each durative action is emulated
+by a triplet (action, process, event) for fixed duration ac-
+tions, and (action, process, action) for flexible duration ones.
+To only encode valid temporal plans, we need all temporal
+points from 1-6 (see previous section) to hold. We introduce
+a number of auxiliary boolean and numeric state variables,
+and use them to constrain actions properly, and propagate
+processes and events when necessary. A key step is the in-
+troduction of lock preconditions-effects, a machinery em-
+ployed to prevent interfering actions to happen at the same
+time. Below, we formalize the encoding.
+In the following, we assume a temporal planning problem
+Π
+def= (F, X, I, Ai, Ad, G) is given, and we define the com-
+piled PDDL+ problem ¯Π
+def= ( ¯F, ¯X, ¯I, ¯G, ¯A, ¯E, ¯P).
+Let FX
+def= F ∪X; we start with the fluents definition.
+¯F
+def= F ∪{ok} ∪{ra | a ∈Ad} ∪{rlf, alf, ilf | f ∈FX}
+¯X
+def= X ∪{oc, gc} ∪{ca | a ∈Ad}
+In addition to the fluents of Π, we add a new ok predicate
+that will be required by every action in the compiled model
+and by the new goal, this will be used to “abort” a plan that
+violated some constraints. We also add two numeric fluents,
+oc and gc, to count the number of actions started but not
+terminated and to distinguish the time in consecutive steps,
+respectively. Moreover, for every durative action a, we add
+a predicate ra, which will be kept to true while a durative
+action is running, and a numeric fluent ca which will be used
+to measure the time since the start of a. Finally, for every
+fluent f we define three “lock” predicates, rlf, alf and ilf,
+that will be used to enforce mutual exclusion constraints.
+The initial state and goal condition are defined by simply
+augmenting the original initial state and goal as follows.
+¯I
+def= {ok =⊤, oc =gc =0} ∪{ra =⊥, ca =0 | a ∈Ad} ∪
+{rlf =alf =ilf =⊤| f ∈FX} ∪I
+¯G
+def= G ∧ok ∧oc = 0
+Before defining the rest of the compilation, the following
+definition provides the key machinery for encoding the non-
+interference constraints.
+Definition 5. Given an instantaneous action a, we define the
+lock precondition λa as:
+^
+f∈V r
+a
+(alf ∧ilf) ∧
+^
+f∈V :=
+a
+(rlf ∧ilf ∧alf) ∧
+^
+f∈V +=
+a
+(rlf ∧alf).
+Moreover, we define the lock effects La as the set:
+{alf := ⊥| f ∈V :=
+a } ∪{ilf := ⊥| f ∈V +=
+a
+}∪
+{rlf := ⊥| f ∈V r
+a }.
+Intuitively, we will augment every happening associated
+with an instantaneous action or with the start or end of a
+durative action with its lock precondition and effects; if all
+locks are reset to ⊤at every time step (see ¯eE below), no pair
+of interfering happenings can appear at the same time.
+We now define the core of the translation starting from ac-
+tions: we introduce a PDDL+ action for every instantaneous
+action, start of durative action and termination of non-fixed
+durative action in the original problem: ¯A = {¯ai | a ∈
+Ai} ∪{¯a⊢| a ∈Ad} ∪{¯a⊣| a ∈Avar} defined as follows.
+¯ai def= (prea ∧ok ∧λa, eff a ∪La)
+Instantaneous actions are simply augmented with the ok pre-
+condition (common to all other actions and events in the
+compilation) and with the lock preconditions and effects.
+Durative actions are split into their starting and ending
+timepoints; fixed-duration actions will be terminated by an
+event (¯e⊣
+a defined below), while variable-duration actions are
+terminated by the ¯a⊣actions.
+¯a⊢def= (prea⊢∧ok ∧λa⊢∧¬ra,
+eff a⊢∪La⊢∪{ra := ⊤, ca := 0, oc += 1})
+The starting of every durative action a corresponds to the a⊢
+snap action, we add the ¬ra precondition to enforce non-
+self-overlapping and we set ra to true, we reset the clock ca
+because we are just starting the action, and we increase oc
+to signal that a new action started but has not finished yet.
+¯a⊣def= (prea⊣∧ok ∧ra ∧la ≤ca ≤ua ∧λa⊣,
+eff a⊣∪La⊣∪{ra := ⊥, oc += −1})
+To terminate a non-fixed durative action a, we require ra and
+that the duration constraint is satisfied with la ≤ca ≤ua;
+we then reset ra to false and decrement oc.
+We have two types of very simple processes in our com-
+pilation that are used to keep track of the time passing while
+an action is running and to continuously increase gc for the
+mutex construction we will describe below. The compilation
+processes are then ¯P = {¯pa | a ∈Ad} ∪{¯pE} with:
+¯pa
+def= (ok ∧ra, { d
+dtca = 1})
+¯pE def= (ok, { d
+dtgc = 1})
+In the compilation, events serve several purposes, each en-
+coded in a different subset: ¯E
+def= ¯E↔∪¯Efix
+⊣
+∪¯Eexpire∪{¯eE}.
+¯Efix
+⊣
+def= {¯e⊣
+a | a ∈Afix} encodes the termination of fixed-
+duration actions, ¯E↔def= {¯e↔
+a | a ∈Ad} ensures that overall
+conditions of durative actions are not violated, ¯Eexpire en-
+sure that no plan prefix has variable duration actions that are
+not terminated within the duration upper bound and ¯eE resets
+all the lock variables immediately after a time-elapse.
+¯e⊣
+a
+def= (prea⊣∧ok ∧ra ∧ca = la ∧λa⊣∧gc = 0,
+eff a⊣∪La⊣∪{ra := ⊥, oc += −1})
+The termination of fixed-duration actions is analogous to the
+variable duration ones, but is an event scheduled at the fixed
+duration (la = ua), measured by ca. We also require gc to
+be 0 to execute this event after ¯eE, as explained below.
+¯e↔
+a
+def= (ok ∧ra ∧¬γa, {ok := ⊥})
+Overall conditions are enforced through the ok predicate: if
+we reach a state where action a is running (ra is true) and
+its overall conditions are not satisfied, we set ok to false,
+making this prefix invalid, because ok can only be falsified,
+and never restored to true. Similarly, if a durative action with
+variable duration is not terminated within its duration upper
+bound (ra∧ca > u), we immediately set ok to false. (This is
+not strictly needed for correctness, as gc would never return
+to 0, but is useful for performance.)
+¯Eexpire def= {(ok ∧ra ∧ca > ua, {ok := ⊥}) | a ∈Avar}
+Finally, we have a single event that restores the locks to true
+whenever gc is positive as follows.
+¯eE def= (ok ∧gc > 0, {gc := 0}∪
+{rlx := ⊤, xwl := ⊤, ilx := ⊤| x ∈FX})
+The idea of this “lock” construction is that in a certain time
+we start the chains of happenings with the event ¯eE that resets
+all the locks, then we can execute other actions or events, but
+every time we “read” a fluent f (either in a precondition or
+in the right-hand-side of an effect) we set rlf to false, ev-
+ery time we have an assignment or increment effect of f we
+set alf or ilf respectively to false. Thanks to the lock pre-
+conditions, we forbid reading a variable if it was previously
+(in the same “superdense” time) assigned or incremented,
+we forbid an assignment if it was previously assigned, in-
+creased or read, and we forbid increments if it was previ-
+ously assigned or read. The whole trick is that gc will be
+continuously increased by a process, so in the subsequent
+times, the locks are automatically reset by the event ¯eE and
+the locks are released. This faithfully captures the semantics
+of non-interference we outlined for temporal planning.
+Given a plan (¯π+, te) with ¯π+ = (t1, a1), . . . (tn, an) for
+¯Π, we define the temporal plan ˜π solving Π as:
+˜π
+def={(t, a, 0) | (t, ¯ai) ∈¯π}∪
+{(t⊢, a, la) | (t⊢, a⊢) ∈¯π and a ∈Afix}∪
+{(t⊢, a, t⊣−t⊢) | (t⊢, a⊢), (t⊣, a⊣) ∈¯π and
+̸ ∃t.t⊢< t′ < t⊣, (t′, a⊢) ∈¯π}
+Additional intuition on the lock mechanism.
+The gc
+function is meant to keep track of a non zero passage of
+time, necessary to separate mutex actions. We highlight that
+gc > 0 is true at the beginning of the sequence of happen-
+ings at any time t > 0. We recall that PDDL+ has a su-
+perdense model of time, so a fluent can change its value by
+means of contemporary happenings, without the time pass-
+ing. In our construction, at each time t > 0 we start our se-
+quence of contemporary happenings in a state where gc > 0,
+because the process ¯pE increases it with a positive derivative
+(we chose 1 for simplicity, but any positive derivative would
+do); however, immediately at the second superdense step (at
+the same time) the event ¯eE triggers, resetting gc to 0. Visu-
+alizing the behavior of gc in the superdense time, we have
+the following:
+• gc(0, 0) = 0, gc(0, 1) = 0, . . ., gc(0, n0) = 0;
+• gc(δ, 0) = δ, gc(δ, 1) = 0, . . ., gc(δ, n1) = 0;
+• gc(2δ, 0) = δ, gc(2δ, 1) = 0, . . ., gc(2δ, n2) = 0;
+• · · · ;
+• gc(t, 0) = δ, gc(t1) = 0, . . ., gc(t, nt) = 0.
+Where gc(t, i) indicates the value of gc at time t and super-
+dense step i.
+Importantly, this construction motivates our choice of
+adopting a discrete time semantics for PDDL+. In fact, this
+construction works perfectly in discrete time (and is not very
+costly for the planner), but exhibits a Zeno behavior in con-
+tinuous time, because the event ¯eE would trigger immediately
+after the previous happening imposing an infinite number of
+happenings in a finite amount of time. Finally, note that with
+an ϵ-separation semantics (Gigante et al. 2022), the system
+is essentially discrete, hence the construction will work.
+Below, we prove that the compilation is sound and complete.
+Indeed, if a plan (¯π+, te) is found for ¯Π, so is ˜π for Π. This
+follows by proving that constraints 1-6 for the validity of a
+plan are all implied by the existence of a state sequence in-
+duced by (¯π+, te). Completeness is more challenging: we
+prove that for every temporal plan, there exists a sufficiently
+small δ for which there is a corresponding valid PDDL+ plan
+for ¯Π. Finally, we highlight that the compilation is polyno-
+mial in size and the plan length is at most doubled.
+Theoretical Properties
+In this section, we formally prove the soundness and com-
+pleteness of our compilation.
+Theorem 1 (Soundness). Let ( ¯
+π+, te) be a valid plan for ¯Π,
+then ˜π is a valid plan for Π.
+Proof. Since ( ¯
+π+, te) is a valid plan for a PDDL+ problem,
+let ¯s0, . . . ¯s ¯m bet the states induced by the plan by the dis-
+crete semantics of PDDL+.
+We have to show that the six semantic conditions for ˜π
+outlined in the semantics explanation of temporal planning
+hold.
+First, we ensure the syntactical properties of ˜π. It is easy
+to see that every instantaneous action in the plan has a du-
+ration of 0 by definition; moreover, the duration da of every
+durative action with fixed duration a ∈Afix also trivially
+satisfies la ≤da ≤ua. For durative actions with non-fixed
+duration, we set the duration as the temporal distance be-
+tween a consecutive pair of (¯a⊢, ¯a⊢) in ¯
+π+. This is guaran-
+teed to be in the [la, ua] interval because:
+• ¯a⊢requires ¬ra and resets the counter ca to 0 and ra to
+true, while ¯a⊢requires ra and la ≤ca ≤ua
+• The process pa starts when ra is set to true and increases
+ca with derivative 1
+Hence, the temporal difference between ¯a⊢and ¯a⊢is equal
+to the value of ca in ¯a⊢which is la ≤ca ≤ua by precondi-
+tion.
+To prove the semantic conditions, let ¯j
+def=
+ts
+j
+δ and we de-
+fine a sequence of states s0, . . . , sm defined as:
+sj = ¯s¯j | F ∪X
+that is, the j-th temporal state is the PDDL+ state at step
+ts
+j
+δ restricted to the original problem fluents. Note that this
+PDDL+ state exists because ts
+j is derived from times (or dif-
+ferences of times) in ¯π+ which are integer multiples of δ by
+definition.
+Another preliminary consideration is that Hj = {a⊢, b⊣|
+¯a⊢,¯b⊣∈H a
+¯j } ∪{a⊣| (t, a, la) ∈¯π+, a ∈Afix, ts
+j =
+t + la}. This is by definition of ˜π.
+We will now show that semantic conditions 1-6 hold for
+s0, . . . , sm.
+1. s0 = I because also I ⊆¯s0. Moreover, s0 |= G because
+ts
+m
+δ = ¯m and ¯s ¯m |= ¯G and ¯G →G.
+2. For every j, the preconditions prea of all a ∈Hj are triv-
+ially satisfied for the instantaneous actions, for all the start-
+ing snap actions and for a⊣with a ∈Avar, because prea
+is also part of the preconditions of the corresponding activi-
+ties in ¯A which are also in H a
+¯j as noted above and thus true
+in ¯s¯j. The only case needing care is the termination of ac-
+tions with fixed duration, which are encoded by means of
+the events ¯e⊣
+a. It suffices to prove that for every ¯a⊢∈H a
+¯k
+with a ∈Afix, there is an instance of event ¯e⊣
+a guaranteed
+to be executable in sa
+¯k+ la
+δ , because this event also checks
+the preconditions of a. Suppose that one or more of these
+event instances is not applied, then the plan ( ¯
+π+, te) cannot
+be valid for the PDDL+ semantics, because of the oc dy-
+namics, which counts the difference in number of opening
+actions and closing actions or events. The only way to apply
+a closing action is paired with an opening, so if we skip a
+single instance of ¯e⊣
+a, we will result in a final non-zero oc
+value. Moreover, such event must happen at step ¯k + la
+δ be-
+cause of the preconditions on ca (identical reasoning as per
+the variable action durations).
+3. Comparing the two semantics, it is easy to see that for
+every j, ¯send
+¯j
+is computed analogously to sj+1, noting again
+that ending events corresponding to ending snap actions in
+Hj must be executed in ¯send
+¯j
+. Hence, sj+1 = ¯s ¯
+j+1 | F ∪X,
+because fluents in F ∪X are unaffected by processes.
+4. Suppose, for the sake of contradiction, that there exists a
+state sw ̸|= γa with j < w ≤k and a starting in ts
+j and end-
+ing in ts
+k. Note that every PDDL+ state ¯si with ¯j < i ≤¯k is
+such that ¯si(ra) is true because of the effects of the compiled
+snap actions as above. Hence, γa must be true in sw, other-
+wise e↔
+a would trigger, making the plan invalid because of
+the ok := ⊥effect that would make the goal unreachable.
+5. Suppose, for the sake of contradiction, that there is a pair
+of actions a ̸= b in Hj (for some j) violating the mutex con-
+straint. Then, one of the following three cases must occur.
+• ∃f ∈V r
+a ∩V w
+b
+This is prevented by the preconditions
+and effects of the compiled actions or events corresponding
+to a and b (that we indicate with ¯a and ¯b). By corresponding
+we mean that if a is an instantaneous action, ¯a = ¯ai; if a is
+a starting snap action, ¯a = ¯a⊢, if a is a ending snap action,
+either ¯a = ¯a⊣or ¯a = ¯e⊣
+a, and analogously for b.
+Now suppose ¯a is before ¯b in ¯π+, rlf is required to be true
+by λb, but rlf is set to false by ¯a, and cannot be set to true
+if not by letting time advance. If the order in ¯π+ is reversed,
+both ilf and alf are required to be true by ¯a, but either of
+them is set to false by the effects of ¯b (because f is either
+assigned or incremented).
+Note that once alf, ilf or rlf is set to false, only ¯eE can
+reset them, but this cannot be done after either ¯a or ¯b are
+executed, because ¯eE requires gc to be positive, while both ¯a
+and ¯b require it to be 0 and only the process ¯pE can set gc to a
+positive value, but only in the subsequent step. (Practically,
+¯eE is the first event of every step, because ¯pE resets to true its
+precondition when transitioning to anew step by letting time
+elapse). This leads to the contradiction.
+• ∃f ∈V r
+b ∩V w
+a This case is the symmetric of the previous
+one.
+• ∃f ∈V :=
+a
+∩V :=
+b
+Similarly to the previous case, the first
+happening sets alf to false and both require it to be true,
+leading to the contradiction for the same reasoning as above.
+6. Non self-overlapping is an immediate consequence of the
+ra dynamics: we forbid to start an action if ra is true and ra
+is kept true exactly during each action instance.
+Theorem 2 (Completeness). Let Π be a temporal planning
+problem admitting a valid plan πt, then there exists a δ un-
+der which there is a valid plan ¯π for ¯Π.
+Proof. (Sketch) Let πt = {(t1, a1), · · · , (tn, an)} and let its
+induced sequence of states s0, . . . , sm with times ts
+0, . . . ts
+m.
+We define the PDDL+ plan (¯π+, te) as te
+def= ts
+m + 1 and
+¯π+ def= ((ts
+j, ¯h) | h ∈Hj, 0 ≤j < m)
+with
+¯h
+def=
+
+
+
+¯ai
+if h ∈Ai
+¯a⊢
+if h = a⊢
+¯a⊣
+if h = a⊣and a ∈Avar
+(we assume ¯π+ is sorted according to the time as per the
+semantics, and the order of simultaneous elements is arbi-
+trary).
+Let δ be a rational such that for any 0 ≤j ≤m:
+ts
+j
+δ ∈Z
+(For example, we can define δ as the GCD of all numerators
+of the ts
+j’s divided by the LCM of their denominators, since
+we model timings as rational numbers. However, any choice
+of δ that makes the division yield an integer would work.)
+Given a time t ∈Q≥0, we define the index before , written
+ib(t), as the largest j s.t. ts
+j ≤t.
+We prove that (¯π+, te) is a valid plan for ¯Π when using δ
+as discretization step.
+The plan is obviously well-formed, because each time is
+a multiple of δ.
+We define a sequence of states ¯s0 . . . , ¯s ¯m with ¯m
+def= te
+δ ,
+where ¯s0 = ¯I and for all 0 < j < ¯m we define ¯sj(x) per
+cases.
+• sib(jδ)(x) if x ∈F ∪X: original fluents values are aligned
+with the temporal trace. The j-th PDDL+ state corresponds
+to time δj in the temporal trace.
+• ¯sj(ok)
+def= ⊤: ok is always true.
+• ¯sj(gc)
+def= δ: due to ¯pE, at the beginning of each step gc is
+set to δ, then ¯eE immediately sets it to 0.
+Domain
+ENHSP
+ENHSP
+ARIES
+OPTIC
+TAMER
+TFLAP
+Next-
+Patty
+LG
+WA
+FLAP
+MatchCellar
+7
+12
+20
+9
+7
+20
+2
+4
+MaJSP
+20
+19
+18
+N/A
+20
+N/A
+N/A
+N/A
+T-Plant-Wat
+20
+16
+15
+20
+12
+0
+0
+13
+T-Sailing
+11
+20
+6
+7
+3
+2
+7
+2
+Total (80)
+58
+67
+59
+36
+42
+22
+9
+19
+Table 1: Coverage analysis domain by domain, planner by
+planner. Bold for best, N/A for Not Applicable.
+0
+10
+20
+30
+40
+50
+60
+Instances Solved
+100
+101
+102
+103
+Solving time (s)
+NextFLAP
+Patty
+TFLAP
+OPTIC
+TAMER
+ENHSP-LG
+ARIES
+ENHSP-WA
+100
+101
+102
+103
+ENHSP-WA
+100
+101
+102
+103
+ARIES
+MatchCellar
+MaJSP
+T-Plant-Wat
+T-Sailing
+TO
+MO
+Figure 1: Cactus (survival) plot (left) and run-time scatter
+plot for the planners with highest coverage (right).
+• The ra predicate is set to true while an action is running:
+¯sj(ra)
+def=
+⊤
+if ∃i.ti < jδ ≤ti + di and ai = a
+⊥
+otherwise
+• Similarly, the oc fluent is set to the number of actions
+opened and not yet closed before time δj:
+¯sj(oc)
+def=
+ib(δj)−1
+X
+k=0
+|{a⊢∈Hk}| −|{a⊣∈Hk}|
+• The ca fluent evolves according to ¯pa, fluent, so we simply
+define:
+¯sj(ca)
+def=
+¯sj−1(ca) + δ
+if ¯sj(ra)
+¯sj−1(ca)
+otherwise
+• The lock predicates alf, ilf and rlf are set to false when
+there is an happening at index k that assigns, increases or
+reads f with ts
+k = δj:
+¯sj(alf)
+def=
+⊥
+if ∃k, a s.t. ts
+k = δj, a ∈Hk and f ∈V :=
+a
+⊤
+otherwise
+¯sj(ilf)
+def=
+⊥
+if ∃k, a s.t. ts
+k = δj, a ∈Hk and f ∈V +=
+a
+⊤
+otherwise
+¯sj(rlf)
+def=
+⊥
+if ∃k, a s.t. ts
+k = δj, a ∈Hk and f ∈V r
+a
+⊤
+otherwise
+The sequence of states ¯s0 . . . , ¯s ¯m constructed in this way
+satisfies all the PDDL+ semantic constraints for ¯Π.
+Experimental Evaluation
+We experimented with our compilation over a selection of
+temporal numeric domains. We focused our attention on
+problems requiring intertwined reasoning between numeric
+and temporal aspects, where the concurrency of the dura-
+tive actions is necessary to solve the instances. As repre-
+sentative of temporally interesting domains, we took the
+classic Matchcellar IPC domain and MAJSP from (Micheli
+and Scala 2019). Then we introduce two new domains,
+T-Sailing, and T-Plant-Watering. T-Sailing extends Sailing
+(Scala, Haslum, and Thi´ebaux 2016) by requiring a boat
+not only to rescue the persons in some specific area of the
+cartesian space, but also to do so under a specific dead-
+line. If the boat arrives too late, the person cannot be saved
+anymore. T-Plant-Watering extends Plant-Watering (Franc`es
+and Geffner 2015) by imposing temporal constraints be-
+tween pouring and opening the tap. The task becomes a
+collaborative activity involving two distinct agents: one car-
+ries the pump used to water the plants, but can begin wa-
+tering only when the other agent simultaneously performs
+the task of opening the tap. All benchmarks are available at
+https://github.com/hstairs/time2processes.
+For each domain we have 20 instances, mostly scaling
+with the number of objects. Our analysis focuses on cover-
+age (number of solved instances per domain) and run-time.
+ENHSP is used as the PDDL+ planner, run with two dif-
+ferent engines, i.e., lazy greedy best-first search (ENHSP-
+LG) and WA∗(ENHSP-WA), both with the hmrp heuristic
+(Scala et al. 2020). In LG, we used focus search as in Scala
+and Bonassi (2025); in WA∗we use w = 4. The compiler
+is implemented within the unified planning library
+(Micheli et al. 2025), and also supports delayed effects and
+timed initial literals; roughly, we emulate them with events
+triggered at the proper time (we omit the formal description
+due to space constraints). We compare the compilation with
+native state-of-the-art temporal planners, i.e., ARIES (Bit-
+Monnot 2023), NextFLAP and TFLAP (Sapena, Onaindia,
+and Marzal 2024), OPTIC (Benton, Coles, and Coles 2012),
+TAMER (Valentini, Micheli, and Cimatti 2020) and Patty
+(Cardellini and Giunchiglia 2025). Experiments were run on
+an AMD EPYC 7413; 1800s timeout, 20 GB memory limit.
+Results. Figure 1 shows per-domain coverage. ENHSP-
+WA got the highest coverage. (Some planners do not sup-
+port MAJSP for lack of delayed effects support.) For purely
+temporal domains, temporal planners are faster, yet both
+ENHSP engines proved competitive, especially in MAJSP.
+Over temporal numeric domains, ENHSP-WA provided su-
+perior performance overall. Figure 1 (right) shows a pairwise
+analysis on run-time for the two best performing planners
+ARIES and ENHSP-WA. ARIES scales better in Matchcel-
+lar, ENHSP-WA better over the temporal numeric domains,
+highlighting a great deal of complementarity. Finally, Fig-
+ure 1 (left) shows the number of instances solved over time,
+confirming the strength of our compilation.
+Conclusion
+In this paper we presented a compilation from PDDL 2.1
+level 3 into PDDL+, proving its soundness and complete-
+ness. It was commonly known that PDDL+ could express
+durative actions, but in thi spaper we provide the first formal
+account of this fact, providing mechanisms to deal with the
+subtleties of the PDDL semantics. In particular, we provide a
+mechanism to faithfully impose durative conditions and the
+“no-moving-target rule” presented in the PDDL 2.1 paper
+(Fox and Long 2003). Our compilation is not only of theo-
+retical interest, but it is also shown to be useful on complex
+temporal numeric planning problems.
+As future work, we would like to extend the compilation
+to PDDL 2.1. level 4, hence including continuous change.
+Moreover, we would like to study an alternative compilation
+targeting PDDL+ with a continuous time semantics.
+Acknowledgments
+Andrea Micheli and Alessandro Valentini have been par-
+tially supported by the STEP-RL project funded by the Eu-
+ropean Research Council under GA n. 101115870. Enrico
+Scala has been supported by the Italian Ministry of Uni-
+versity and Research within the PRIMA 2024 programme
+project ”Optimizing Water Resources in Coastal Areas using
+Artificial Intelligence” (AI4WATER – D53C25000510006)
+References
+Benton, J.; Coles, A. J.; and Coles, A. 2012.
+Temporal
+Planning with Preferences and Time-Dependent Continuous
+Costs. In Proceedings International Conference on Auto-
+mated Planning and Scheduling, ICAPS 2012.
+Bit-Monnot, A. 2023. Enhancing Hybrid CP-SAT Search
+for Disjunctive Scheduling. In Gal, K.; Now´e, A.; Nalepa,
+G. J.; Fairstein, R.; and Radulescu, R., eds., ECAI 2023 -
+26th European Conference on Artificial Intelligence, 255–
+262. IOS Press.
+Cardellini, M.; and Giunchiglia, E. 2025. Temporal Numeric
+Planning with Patterns. In AAAI-25 Conference on Artificial
+Intelligence, 26481–26489. AAAI Press.
+Coles, A. J.; Coles, A.; Fox, M.; and Long, D. 2010.
+Forward-Chaining Partial-Order Planning.
+In Proceed-
+ings International Conference on Automated Planning and
+Scheduling, ICAPS 2010.
+Fox, M.; and Long, D. 2003. PDDL2.1: An extension to
+PDDL for expressing temporal planning domains. Journal
+of artificial intelligence research.
+Fox, M.; and Long, D. 2006. Modelling Mixed Discrete-
+Continuous Domains for Planning. Journal of Artificial In-
+telligence Research.
+Franc`es, G.; and Geffner, H. 2015.
+Modeling and Com-
+putation in Planning: Better Heuristics from More Expres-
+sive Languages. In Brafman, R. I.; Domshlak, C.; Haslum,
+P.; and Zilberstein, S., eds., Proceedings of the Twenty-
+Fifth International Conference on Automated Planning and
+Scheduling, ICAPS 2015, 70–78. AAAI Press.
+Gigante, N.; Micheli, A.; Montanari, A.; and Scala, E. 2022.
+Decidability and complexity of action-based temporal plan-
+ning over dense time. Artif. Intell., 307: 103686.
+Micheli, A.; Bit-Monnot, A.; R¨oger, G.; Scala, E.; Valen-
+tini, A.; Framba, L.; Rovetta, A.; Trapasso, A.; Bonassi, L.;
+Gerevini, A. E.; Iocchi, L.; Ingrand, F.; K¨ockemann, U.; Pa-
+trizi, F.; Saetti, A.; Serina, I.; and Stock, S. 2025. Unified
+Planning: Modeling, manipulating and solving AI planning
+problems in Python. SoftwareX, 29: 102012.
+Micheli, A.; and Scala, E. 2019. Temporal Planning with
+Temporal Metric Trajectory Constraints. In The Thirty-Third
+AAAI Conference on Artificial Intelligence, AAAI 2019,
+7675–7682. AAAI Press.
+Percassi, F.; Scala, E.; and Vallati, M. 2025. On the Notion
+of Plan Quality for PDDL+. In Proceedings of the Interna-
+tional Conference on Automated Planning and Scheduling,
+volume 35, 102–111.
+Sapena, ´O.; Onaindia, E.; and Marzal, E. 2024. A hybrid
+approach for expressive numeric and temporal planning with
+control parameters. Expert Syst. Appl., 242: 122820.
+Scala, E.; and Bonassi, L. 2025. On Using Lazy Greedy
+Best-First Search with Subgoaling Relaxation in Numeric
+Planning Problems. In Proceedings International Confer-
+ence on Automated Planning and Scheduling, ICAPS 2025,
+245 – 249.
+Scala, E.; Haslum, P.; and Thi´ebaux, S. 2016. Heuristics for
+Numeric Planning via Subgoaling. In Kambhampati, S., ed.,
+Proceedings of the Twenty-Fifth International Joint Confer-
+ence on Artificial Intelligence, IJCAI 2016, 3228–3234. IJ-
+CAI/AAAI Press.
+Scala, E.; Saetti, A.; Serina, I.; and Gerevini, A. E.
+2020. Search-Guidance Mechanisms for Numeric Planning
+Through Subgoaling Relaxation. In Proceedings Interna-
+tional Conference on Automated Planning and Scheduling,
+ICAPS 2020, 226–234. AAAI Press.
+Valentini, A.; Micheli, A.; and Cimatti, A. 2020. Tempo-
+ral Planning with Intermediate Conditions and Effects. In
+AAAI-20 Conference on Artificial Intelligence.

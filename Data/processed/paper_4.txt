@@ -1,0 +1,1855 @@
+Separable neural architectures as a primitive for unified
+predictive and generative intelligence
+Reza T. Batley1
+Apurba Sarker1†
+Rajib Mostakim2†
+Andrew Klichine1†
+Sourav Saha1,∗
+1Kevin T. Crofton Department of Aerospace and Ocean Engineering, Virginia Polytechnic Institute
+and State University, Blacksburg, VA 24060, USA
+2Department of Mechanical Engineering, Bangladesh University of Engineering and Technology,
+Dhaka, Bangladesh
+∗Correspondence: souravsaha@vt.edu
+Abstract
+Intelligent systems across physics, language and perception often exhibit factorisable structure, yet are typically
+modelled by monolithic neural architectures that do not explicitly exploit this structure. The separable neural architecture
+(SNA) addresses this by formalising a representational class that unifies additive, quadratic and tensor-decomposed neural
+models. By constraining interaction order and tensor rank, SNAs impose a structural inductive bias that factorises high-
+dimensional mappings into low-arity components. Separability need not be a property of the system itself: it often emerges
+in the coordinates or representations through which the system is expressed. Crucially, this coordinate-aware formulation
+reveals a structural analogy between chaotic spatiotemporal dynamics and linguistic autoregression. By treating continuous
+physical states as smooth, separable embeddings, SNAs enable distributional modelling of chaotic systems. This approach
+mitigates the nonphysical drift characteristics of deterministic operators whilst remaining applicable to discrete sequences.
+The compositional versatility of this approach is demonstrated across four domains: autonomous waypoint navigation via
+reinforcement learning, inverse generation of multifunctional microstructures, distributional modelling of turbulent flow
+and neural language modelling. These results establish the separable neural architecture as a domain-agnostic primitive
+for predictive and generative intelligence, capable of unifying both deterministic and distributional representations.
+Keywords: separable neural architectures, tensor decomposition, generative modelling, turbulence, metamaterials
+Monolithic neural architectures have transformed ar-
+tificial intelligence. The Transformer, with its ability
+to model long-range interactions across sequences, has
+achieved ubiquity in language modelling. Convolutional
+architectures remain highly effective for local feature
+extraction. However, systems across physical, linguis-
+tic and perceptual domains often exhibit latent factoris-
+able structure that monolithic architectures leave implicit
+rather than exploit. Moreover, separability is often not
+a property of a system itself but of the coordinates or
+representations through which it is expressed.
+Accordingly, this work introduces the separable neu-
+ral architecture (SNA) as a neural primitive: a rank-
+and interaction-controlled operator that serves as (i) a
+standalone model, (ii) a variational trial space, or (iii) a
+compositional module within larger intelligent systems.
+Formally, SNAs construct high-dimensional mappings
+from low-arity learnable components – atoms – whose
+interactions are governed by an interaction object that
+can be embedded as a sparse tensor. Expressivity is gov-
+erned by two controls on the interaction object: its rank
+r and interaction order k, which together control the ca-
+pacity and sparsity of the learned representation. SNAs
+thus define a representational class subsuming additive,
+quadratic and tensor-decomposed neural models within
+a single formalism.
+This primitive permits separable structure to be ex-
+ploited where it arises, whether explicit, induced by a
+latent coordinate system or embedded within a larger
+architecture. When applied at the level of representation,
+SNAs enable continuous token embeddings that preserve
+neighbourhood relations in the underlying state space
+[1]. Adjacent physical states are thus adjacent in repre-
+sentation, a feature lacking in the discrete lookup embed-
+dings of prevailing neural sequence models. For chaos
+precludes stable pointwise prediction over extended hori-
+zons; modelling must therefore be distributional to avoid
+nonphysical drift. Under this view, chaotic spatiotem-
+poral dynamics and linguistic autoregression become
+structurally analogous: both benefit from modelling con-
+1
+arXiv:2603.12244v1  [cs.LG]  12 Mar 2026
+Figure 1: The separable neural architecture (SNA) as a unified primitive for predictive and generative intelligence.
+The SNA formalises a representational class that constructs high-dimensional mappings by combining lower-arity
+learnable components (atoms) selected by an interaction tensor. By constraining interaction order and tensor rank, this
+formalism subsumes generalised additive, quadratic and tensor-decomposed neural models.
+ditional distributions over sequentially revealed states.
+As a standalone model, the separable neural architec-
+ture realises compact predictive–generative intelligence
+in the form of KHRONOS [2, 3]. KHRONOS instanti-
+ates an SNA whose low-rank, separable structure across
+all dimensions yields a smooth, cheaply invertible in-
+terpolant over the input space. Despite containing only
+hundreds of trainable parameters, it supports accurate
+prediction and rapid generative inversion to recover en-
+tire manifolds of admissible inputs consistent with a
+queried output. KHRONOS demonstrates that separable
+primitives can unify prediction and inversion within a
+single lightweight architecture able to operate in real
+time on commodity hardware.
+This same primitive extends naturally from predictive–
+generative modelling to variational learning by reinter-
+preting KHRONOS as a structured Galerkin trial space.
+In this setting, the SNA is trained directly from a gov-
+erning operator, yielding a variational separable neu-
+ral architecture (VSNA) over spatiotemporal-parametric
+domains. This demonstrates that SNAs may serve as
+physics-faithful computational representations capable
+of learning high-dimensional fields from governing op-
+erators.
+Thus, the present work introduces the SNA as a
+neural primitive for exploiting latent factorisable struc-
+ture across intelligent systems (Fig. 1). The SNA is
+shown to unify predictive and generative modelling
+across domains.
+It serves as a standalone architec-
+ture enabling parsimonious predictive–invertive learn-
+ing (KHRONOS); as a trial space for operator-driven
+learning of high-dimensional spatiotemporal-parametric
+fields (VSNAs); and as a compositional module within
+larger intelligent systems, enabling efficient autonomous
+2
+navigation agents (SPAN), generative inversion of bicon-
+tinuous multiscale metamaterials (Janus) and continuous
+token embeddings for probabilistic sequence modelling
+(Leviathan).
+Separable neural architectures as a
+predictive–generative primitive
+Predictive and generative modelling
+The predictive–generative capacity of separable neural
+architectures is grounded in a specific subclass, aris-
+ing when full interaction is permitted (k = d) and the
+interaction tensor is factorised into a rank-r canonical
+polyadic (CP) decomposition. In this CP-class, atoms
+factorise into products of univariate sub-atoms ψ. Con-
+sistent with the convention in generalised decomposi-
+tions, each atom ϕ constitutes a single mode: a stan-
+dalone functional contribution to the global representa-
+tion. Letting c(j) denote modal weights and ρ an activa-
+tion function, an element of this class may therefore be
+written
+fr(x; ΘCP ) = ρ
+
+
+r
+X
+j=1
+c(j)
+d
+Y
+i=1
+ψ(j)(xi; θ(k)
+d )
+
+.
+(1)
+The CP-class is grounded in a concrete setting through
+KHRONOS [2, 3], a CP-class SNA adopting identity
+activation (ρ(x) = x), unit modal weights (c(j) ≡1)
+and B-spline subatoms. This particular CP-class net-
+work structure traces its lineage to the interpolating
+neural network (INN) [7] and its Hierarchical Deep
+Learning Neural Network (HiDeNN) predecessors [8, 9].
+KHRONOS has separately demonstrated 100-fold gains
+over Kolmogorov-Arnold Networks [10] on canonical
+PDE benchmarks [2]. On multi-fidelity aerodynamic
+field prediction, it achieves accuracy comparable to
+multilayer perceptrons (MLPs), graph neural networks
+(GNNs) and physics informed neural networks (PINNs)
+[11] with 94 −98% fewer parameters [3]. KHRONOS
+yields a smooth, separable interpolant over the input
+coordinate space. For a spline basis of order P over Cd
+interior cells in each dimension d, each subatom takes
+the form
+ψ(j)(xi; θ(j)
+d ) =
+Ci+P
+X
+c=1
+α(j)
+d,cBP
+c (xd).
+(2)
+The extended index Ci+P accounts for domain-exterior
+“ghost” cells required to preserve partition of unity [12].
+KHRONOS is demonstrated on a process–structure
+modelling problem investigated originally in [4, 5], link-
+ing thermal histories recorded during directed energy
+deposition of Inconel 718 to mechanical properties of
+the resultant print. The experimental setup for this prob-
+lem is visualised in Fig. 2a. The raw thermal signals
+are stochastic and nonlinear, as well as long (10, 000
+time indices), whilst available paired data are sparse (96
+samples).
+Data preprocessing follows [4] with an initial wavelet
+transform. Previous works fed these high-dimensional
+representations into monolithic convolutional neural net-
+works (CNNs) – with approximately 11 million parame-
+ters in the modified ResNet18 of [4] and 800,000 in the
+one-dimensional CNN of [5]. Here, a subsequent princi-
+pal component analysis (PCA) is instead introduced, de-
+composing the data into a low-dimensional latent space.
+This coordinate transform reveals the factorisability of
+the thermal physics. Exploiting this, KHRONOS re-
+quired only 240 parameters for yield stress (YS) and
+108 for ultimate tensile strength (UTS) – a reduction of
+four to five orders of magnitude. Despite this parsimony,
+KHRONOS achieved test R2 scores of 0.76 (YS) and
+0.70 (UTS), matching or exceeding prior approaches;
+the only model to achieve the highest score on both met-
+rics. A comparative summary, including an XGBoost
+baseline [6], is visualised in Fig. 2b. All models exhibit
+poor performance for the material modulus, seemingly
+saturating at R2 = 0.14. This is consistent with the prior
+studies, and it is well-known that this property is largely
+composition-controlled, and only weakly sensitive to the
+thermal history as captured by process sensors.
+Inverting opaque monolithic models requires expen-
+sive surrogate optimisation or the training of sepa-
+rate inverse networks. KHRONOS, however, admits
+easily traced (even analytic) derivatives and is highly
+lightweight. These properties enable target mechanical
+properties to be inverted to plausible thermal histories
+via a structured Newton search. Multiple initialisations
+produce a low-dimensional manifold of solutions consis-
+tent with the queried property. The resulting inversions
+recover ensembles of thermal histories that closely re-
+semble the ground-truth trajectory with a reasonable
+uncertainty envelope. This is illustrated in Fig. 2c. The
+search is so lightweight, in fact, that tens of such his-
+tories (47 for YS; 64 for UTS) are generated in under
+50ms on commodity CPU hardware.
+Variational learning of spatiotemporal–
+parametric fields
+In the sense of classical variational calculus, the vari-
+ational instantiation of separable neural architectures
+(VSNAs) for the solution of PDEs follows the same
+rank-controlled, separable structure that defines predic-
+tive SNAs. The key distinction is that VSNAs learn di-
+rectly from governing operators rather than from data. In
+3
+a
+10
+1
+10
+2
+10
+3
+10
+4
+10
+5
+10
+6
+10
+7
+Trainable Parameters
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Test R2 Score
+0.70
+0.67
+0.14
+0.68
+0.65
+0.76
+0.70
+0.14
+0.76
+0.46
+0.14
+Accurate, parsimonious
+Complex
+Inaccurate
+Inaccurate, complex
+b
+Fang et al.
+Xie et al.
+KHRONOS
+XGBoost
+Yield Stress
+UTS
+Modulus
+0
+2000
+4000
+6000
+8000
+10000
+Time Index
+0
+1000
+2000
+3000
+4000
+Temperature, K
+c
+Ground-truth thermal history
+Generated, YS target
+Generated, UTS target
+Laser
+Stainless steel 304 substrate
+Inconel 718
+Build
+Infrared
+camera
+Sensor
+perception
+Forward
+Inverse
+Mechanical
+Properties
+Tensile
+coupons
+Figure 2: Prediction and inversion with a canonical separable neural architecture. a, A schematic of the
+experimental setup. A laser directed energy deposition machine builds thin-walled structures layer by layer on a
+stainless steel 304 substrate, whilst an infrared camera records the evolving thermal field during the build. These
+measurements are subsequently linked to the mechanical response of the material through tensile testing of extracted
+coupons. b, Predictive performance versus trainable parameters on the Inconel 718 thermal-history dataset. KHRONOS
+achieves state-of-the-art accuracy in both yield stress (YS) and ultimate tensile strength (UTS) with up to five orders-of-
+magnitude fewer parameters than prior models from the literature [4, 5], and a thousand times fewer than XGBoost
+[6]. c, Generative inversion of target mechanical properties to thermal histories. KHRONOS’ lightweight structure
+enables rapid recovery of entire ensembles of plausible histories consistent with queried YS and UTS targets. Here, 47
+trajectories converged for YS (399.9MPa) recovered in 47.3ms and 64 for UTS (670.4MPa) recovered in 39.5ms. The
+illustrated mean and range of converged trajectories closely match the ground-truth thermal history.
+this setting, the separable representation acts as a global
+trial space over an entire spatiotemporal-parametric do-
+main, treating it as a continuous physical manifold to be
+recovered.
+VSNAs sit at the intersection of established paradigms
+for physics-based solution of spatiotemporal-parametric
+fields. Comparable finite-element approaches discre-
+tise the entire spatiotemporal–parameter domain with
+high-dimensional shape functions, but encounter the
+“curse of dimensionality”: an exponential growth in de-
+grees of freedom. Physics-informed neural networks
+(PINNs; [11]) instead parameterise the solution space
+with a monolithic neural field trained by minimising
+strong-form PDE residuals together with boundary and
+initial condition losses, imposed only softly, and also
+lack variational optimality guarantees. Proper gener-
+alised decomposition (PGD; [13]) employs similar low-
+rank tensor products to address high-dimensional PDEs
+but relies on a “greedy” training strategy: modes are
+optimised sequentially and then frozen. This prevents
+communication between rank components, often requir-
+ing a higher rank to reach a given accuracy than global
+4
+x
+y
+t
+Rotation, 
+Diffusivity, D
+Predicted
+t = 0.00
+Exact
+Relative error
+t = 0.25
+t = 0.75
+t = 1.00
+0.0
+0.2
+0.4
+0.6
+0.8
+u
+0.000
+0.005
+0.010
+0.015
+0.020
+Relative error
+10
+3
+10
+4
+10
+5
+Trainable parameters
+10
+4
+10
+3
+10
+2
+L
+2 Error
+Slope = -4
+Efficient frontier, slope -0.68
+4
+16
+64
+256
+1536
+Rank
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+u
+a
+b
+c
+Figure 3: Variational separable neural architectures recover high-dimensional PDE solution manifolds with
+favourable scaling. a, Spatiotemporal evolution of the field for fixed ω = π
+3 and D = 0.001. The top and middle rows
+compare KHRONOS’s predicted solution with the exact, and the bottom shows KHRONOS’s relative error. b, The
+six-dimensional spatiotemporal-parametric advection-diffusion field learned by KHRONOS. Stacked (x −y) spatial
+slices across time t are shown across rotation-diffusivity (ω −D) parameter space, illustrating the recovery of the entire
+solution manifold in a single global representation. c, Approximation (L2) error versus trainable parameters for the
+same system under refinement of rank R and resolution C. Rank-isolines are connected and colour-coded. Along
+rank-isolines, errors decrease with resolution at slope = −4 before saturating at the rank capacity limit. Across ranks,
+an efficient frontier emerges (fitted slope ≈−0.68 in log-log space), sustained across four orders of magnitude in
+parameter count.
+training would. VSNAs unify these perspectives by
+combining operator-driven variational training with a
+separable and learned representation – structurally akin
+to PGD – trained globally, as in neural approaches.
+The VSNA instance examined herein is KHRONOS,
+the CP-class SNA with each coordinate direction repre-
+sented by a learned B-spline basis expansion. Although
+identical in functional form to the predictive model, it
+5
+is here interpreted variationally as forming a finite-rank
+trial space over the spatiotemporal-parametric domain.
+As formalised in Section , such separable trial spaces are
+dense in the underlying Hilbert space under mild assump-
+tions. It follows immediately that the global solution is
+approximable to arbitrary precision as rank R and reso-
+lution C are increased. Under standard assumptions on
+the governing operator – most notably boundedness and
+coercivity of a bilinear form – KHRONOS converges in
+the same limits.
+The PDE solution is obtained by physics-based
+training via least-squares minimisation of the govern-
+ing operator residual.
+To illustrate this principle, a
+six-dimensional spatiotemporal–parametric advection–
+diffusion system is considered:
+∂u
+∂t + U · ∇u −D∇2u = 0.
+(3)
+The field u evolves over spatial coordinates (x, y, z) ∈
+[0, 1]3 with homogeneous Dirichlet boundary conditions,
+as well as time t ∈[0, 1], angular velocity ω ∈[0, π
+3 ] and
+diffusivity D ∈[0.001, 0.01]. The motion of an initial
+Gaussian plume is driven by a two-dimensional solid-
+body rotating wind U = [−ω(y −1
+2), ω(x −1
+2), 0]T .
+In physical application, such a system might model the
+transport and dissipation of a scalar quantity – energy,
+aerosols, perhaps pollutants – within a rotating fluid
+domain [14].
+KHRONOS captures the full six-dimensional solu-
+tion manifold as a low-rank separable field over space,
+time and parameters. This representation permits the
+continuous field to be queried at arbitrary locations in
+space, time and parameter space. Whereas a classi-
+cal FEM or standard PINN approach would require a
+full re-solve for each desired parameter combination,
+KHRONOS provides the full space-time field, queried
+in milliseconds. Figure 3a illustrates representative two-
+dimensional spatial slices at t = 0, 0.5 and 1 of the
+learned six-dimensional manifold at ω = π
+4 , D = 0.001.
+KHRONOS’s prediction is compared against a semi-
+analytic proxy of the governing system, and space-wise
+absolute errors are shown. KHRONOS reproduces both
+rotational transport and diffusive spread – albeit mild at
+this D – with high fidelity across time. Errors remain
+smooth and spatially structured. Having established that
+the CP-class VSNA recovers the coupled spatiotemporal–
+parametric dynamics, the natural question is how this
+accuracy scales with computational resources.
+Figure 3b quantifies approximation accuracy under
+joint refinement of rank R and resolution C. Error ini-
+tially decreases systematically with slope = −4 with
+C-refinement – as is expected with cubic B-splines –
+but saturates once rank capacity is reached. This com-
+bined effect produces an efficient frontier sustained
+across four orders of magnitude in trainable param-
+eters N.
+This frontier follows an empirical scaling
+∥e∥L2 ≈0.24N −0.68, consistent with the theoretical
+convergence rate of −p
+d = −4
+6 for cubic B-splines in six
+dimensions.
+The improved intercept compresses the parameters
+needed to achieve a target error by three orders of magni-
+tude compared to six-dimensional cubic B-spline FEM.
+This understates the advantage: achieving comparable
+error would require a mesh density exceeding memory
+limits by many orders of magnitude, with a correspond-
+ing O(N 18) explosion in solver complexity for a direct
+solve.
+Collectively, these results establish the separable neu-
+ral architecture as a highly capable standalone primitive.
+Whether learning from sparse, noisy data to predict and
+invert thermal histories, or acting as a Galerkin trial
+space for the solution of high-dimensional PDEs, the
+SNA exploits separable structure where it may exist.
+Having demonstrated its efficacy as an isolated primitive,
+the natural progression is as a structural inductive bias
+within larger, separable–monolithic composite learning
+systems.
+Composite learning systems
+Generative inversion of multiscale metama-
+terials
+Janus [15] is a bidirectional framework for generative
+inversion of three-dimensional multiscale metamaterials,
+in which the SNA serves as a compositional module
+within a larger intelligent system. At the macroscale,
+topological optimisation typically demands continuously
+varying and specific mechanical properties to maximise
+structural efficiency [16–18]. However, designing these
+property fields at the microscale requires solving an
+ill-posed inverse homogenisation problem. Traditional
+concurrent multiscale approaches are computationally
+prohibitive [19, 20]. Recent data-driven approaches ei-
+ther rely on pre-computed libraries [21, 22] or sample
+from monolithic generative models [23, 24], typically
+suffering from limited property coverage and disjointed
+boundaries [25, 26]. Janus circumvents these limitations
+by treating the continuous physical state as a separable
+embedding. Each unit cell microstructure is generated
+via gradient-based maximum a posteriori (MAP) inver-
+sion [27, 28] in a highly compressed latent space. This
+approach encourages topological veracity (“on manifold”
+behaviour) and perfect boundary connectivity.
+Janus is validated on a macro-scale beam compris-
+ing 10 × 2 × 2 unit cells. The target property field
+requires a monotonic reduction in solid volume fraction
+6
+Table 1: L-BOM dataset features. Inputs are symmetry-reduced unit cells; outputs comprise the 21-component elastic
+tensor, volume fraction and permeability.
+Feature
+Size
+Description
+Input
+Voxel Grid
+643
+Origin-anchored octant of L-BOM. Binary field.
+Outputs
+Normal Stiffness
+3
+Axial (C1111, C2222, C3333).
+Normal Coupling
+3
+Off-diagonal (C1122, C1133, C2233).
+Shear Stiffness
+3
+Diagonal (C1212, C1313, C2323).
+Shear Cross
+12
+Identically zero due to symmetry.
+Volume
+1
+Solid volume fraction.
+Permeability
+1
+Fluid transport capacity.
+Vf from 0.65 at the root to 0.25 at the tip, paired with
+a corresponding gradient in the primary load-bearing
+axial stiffness C1111 of 350GPa at the root down to
+50GPa at the tip. Specifically, this gradient is derived
+from a cantilever beam model: the bending moment dis-
+tribution under tip loading prescribes a monotonically
+decreasing stiffness field, with local Young’s modulus
+scaled from the volume fraction via a SIMP power law
+[17]. The first step involves training Janus on a large-
+range, boundary-identical, bicontinuous and open-cell
+microstructure (L-BOM) dataset [22]. This dataset con-
+tains 10,770 boundary-masked 128 × 128 × 128 mi-
+crostructures. Due to cubic symmetry, origin-anchored
+64 × 64 × 64 octants are used as input data.
+Within Janus, the separable head learns to predict
+the 23 physical properties, as detailed in Table 1, from
+64-dimensional latent codes generated by the encoder
+from these octants. A separate decoder head learns to
+reconstruct the original octant from the same latent code.
+This schematic is visualised in Fig. 4a. In this phase,
+Janus achieves a reconstructive binary cross-entropy loss
+of 8%, an R2 = 0.82 for permeability and R2 > 0.99
+for all normal stiffness and coupling terms of the stress
+tensor from the latent space. Parity plots of the axial
+and shear stiffnesses are shown in Fig. 4b. Unlike the
+isotropic clouds typical of probabilistic generative mod-
+els, Janus’s latent space is structured and smooth, as can
+be seen in Fig. 4c. Janus achieves a cycle consistency
+of 2%, indicating that the latent space is stable under
+encode–decode cycles.
+Janus is subsequently deployed for generative inver-
+sion. Maximum a posteriori inversion guards against off-
+manifold latent codes and aids in avoiding gradient hallu-
+cination – the discovery of pathological latent codes that
+“trick” the predictor whilst diverging from true physics
+(cf. [29]). Ensembling is also used: for each unit cell,
+Janus produces 16 candidate microstructures in parallel
+with the lowest error – as determined by a final FFT
+solve – selected for the macro-structure. Since Janus
+learns a continuous topological field, volume-preserving
+thresholding is used for binarisation to ensure exact ad-
+herence to desired volume fraction. This entire process
+takes two-and-a-half minutes to construct the multiscale
+beam composed of 84 million voxels.
+The stiffness targets prescribed by the cantilever beam
+model are visualised in Fig. 4d, alongside the Janus-
+generated beam rendered by FFT-validated stiffness and
+by local relative error. Fig. 4e confirms that actual
+volume fraction exactly tracks the target, and that ax-
+ial stiffness closely agrees across the beam with a mean
+relative error (signed) of 0.1% for the primary design ob-
+jective C1111. Fig. 4f confirms these modest local errors,
+with mean absolute error (MAE) of 2.57%, root mean
+squared error (RMSE) of 3.49% and R2 score of 0.994
+for C1111. Global energy distribution metrics show close
+agreement – with a correlation of 0.999 and L1 error of
+1.77%. Crucially, tip deflection of the generated multi-
+scale beam – the macroscale quantity prescribing local
+stiffness objectives – agrees to within 0.7%.
+Distributional sequence modelling of turbu-
+lence
+Many systems of interest are high-dimensional, stochas-
+tic and inherently distributional – the objective being the
+characterisation of admissible futures, not just pointwise
+prediction. Leviathan [1] is a composite learning system
+that extends the SNA formalism to this regime, apply-
+ing it to the distributional prediction of turbulence: a
+stringent test in which even short-horizon forecasts must
+represent ensembles of feasible future states.
+Leviathan is evaluated on two-dimensional incom-
+pressible turbulence from the PDEBench suite [30, 31],
+simulated at Mach 0.1 with viscosity and dissipation
+parameters η = 10−8, ζ = 10−8 and periodic bound-
+ary conditions. The resulting fields are resolved on a
+7
+2
+1
+0
+1
+2
+PC-1, 19.7% variance
+1.0
+0.5
+0.0
+0.5
+1.0
+1.5
+PC-2, 7.2% variance
+Target
+Actual
+Relative error
+64.3
+215.2
+366.0
+Axial stiffness C1111, GPa
+6.34
+0.00
+6.34
+Relative error, %
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+Vf
+Target
+Actual
+0
+100
+200
+300
+Axial, GPa
+Target
+C1111
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Macro-element coordinate, X
+5
+0
+5
+Rel. err, %
+C1111 error, mean = 0.11%
+0
+1
+2
+3
+4
+MAE
+RMSE
+R2 error
+2.57%
+3.49%
+0.60%
+Local C1111 errors
+0
+1
+2
+3
+4
+Energy R2 error
+Energy L1 error
+Compliance error
+0.15%
+1.77%
+0.70%
+Global beam metrics
+0
+200 400 600
+0
+200
+400
+600
+Pred, GPa
+C1111, R2=0.999
+0
+200 400 600
+C2222, R2=0.999
+0
+200 400 600
+C3333, R2=0.999
+0
+50 100 150 200
+Actual, GPa
+0
+50
+100
+150
+200
+Pred, GPa
+C1212, R2=0.998
+0
+50 100 150 200
+Actual, GPa
+C1313, R2=0.998
+0
+50 100 150 200
+Actual, GPa
+C2323, R2=0.998
+0.2
+0.4
+0.6
+C1111, TPa
+a
+b
+c
+d
+e
+f
+Figure 4: Bidirectional generative framework and realisation of seamless, multiscale metamaterials. a, Schematic
+of Janus’s architecture. A three-dimensional convolutional autoencoder encodes a unit cell voxelised microstructure into
+a 64-dimensional latent space from which it learns to reconstruct them. A separable neural architecture head, similar to
+KHRONOS, predicts physical properties from the latent. This head is readily inverted to generate a new microstructure
+given target properties. b, Forward prediction accuracy of Janus on key components of the stress tensor from a held-out
+test set, demonstrating near-perfect correlation. c, Principal component analysis (PCA) of the latent space coloured by
+axial stiffness C1111, highlighting the smooth manifold learned by the network. d, Macroscale C1111 stiffness targets as
+prescribed by the cantilever beam model, volumetric rendering of the 40-cell multiscale beam with Janus-designed
+microstructures, and rendering shaded with local relative errors as determined by FFT homogenisation. e, Beamwise
+validation of the designed property field. Actual volume fraction exactly tracks the target, and axial stiffness closely
+agrees across the beam with low relative errors. f, Summary of local stiffness-field and global beam-level metrics.
+Local C1111 errors remain below 3.5%, whilst global metrics remain below 2%, confirming the intended structural-level
+response.
+8
+512 × 512 grid over 21 time steps. From each field,
+64 non-overlapping 64 × 64 patches are extracted and
+treated as independent spatial streams, greatly ampli-
+fying the training corpus. The problem becomes one
+of learning local, translationally-invariant behaviour in
+open-boundary turbulent flow.
+The predominant neural surrogates in this setting are
+deterministic operator learners.
+The Fourier Neural
+Operator [32] learns mappings from u(t) to u(t + 1)
+via pointwise regression. This approach is mirrored
+by DeepONet [33], Separable DeepONet [34] and
+Galerkin-based Transformer architectures [35]. Such
+pointwise-deterministic approaches achieve strong short-
+horizon accuracy and approximate the local evolution
+operator effectively.
+In chaotic systems, however, neighbouring trajecto-
+ries diverge exponentially under autoregressive rollout.
+Although governed by deterministic equations, chaotic
+evolution is effectively probabilistic for prediction as in-
+finitesimal state uncertainty – such as the floating-point
+noise floor – inevitably progresses into macroscopic
+variability over time. Treating evolution as a determin-
+istic mapping therefore imposes a misaligned inductive
+bias. In pointwise-regressive operator learning this ren-
+ders long-horizon trajectories nonphysical; they effec-
+tively “fall off” the attractor and fail to preserve inertial-
+range statistics and physical properties [36]. One such
+off-attractor failure mode manifests as mean-state drift,
+yielding biased climatological averages under autore-
+gressive rollout in modelling weather systems [37].
+Leviathan instead learns a conditional distribution
+over admissible future states, an inductive bias better
+suited to the finite-precision reality of chaotic turbulence.
+Uncertainty becomes the primary modelling objective;
+Leviathan learns an ensemble of feasible next states
+conditioned on the prior. Herein lies the structural anal-
+ogy: Leviathan treats chaotic spatiotemporal evolution
+no differently from linguistic autoregression, learning
+turbulence as a language in continuous embedding space.
+The manifold learned by Leviathan’s embeddings thus
+represents emergent factorisability in the underlying dy-
+namics. In exploiting this separability, Leviathan inau-
+gurates a foundation-model paradigm for turbulence.
+Leviathan achieves this through its generator mod-
+ule [1], a neural token-embedding engine that base-
+decomposes tokens into coordinates and maps them
+into a seeding space. In the following exposition, in-
+put vorticities are quantised to uint16 precision and
+base-256-decomposed into a two-dimensional coordi-
+nate system then embedded into a 128-dimensional seed-
+ing space. The manifold formed by these intermediate
+embeddings is learned by a separable neural architecture
+and supplied to the Transformer backbone. This con-
+struction preserves neighbourhood relations: adjacent
+physical states remain adjacent in representation, un-
+like conventional static embeddings where neighbouring
+states occupy entirely unrelated slots.
+Each Leviathan attention block uses a causality-
+respecting Prefix-LM mask [38, 39] adapted to spa-
+tiotemporal fields. The prior state p(t) is processed bidi-
+rectionally, seeing full spatial context, whereas the next
+state p(t + 1) is generated autoregressively: each token
+p(t + 1, i) attends to the full history p(t) ∪p(t + 1, < i)
+but remains masked from future tokens p(t + 1, ≥i).
+Crucially, the mask ensures that p(t) does not attend to
+p(t + 1), preventing acausal information leakage across
+time.
+Training proceeds via maximisation of the conditional
+likelihood of the next state given the prior. Upon deploy-
+ment, Leviathan is evaluated under free autoregression.
+Predictions are recursively sampled from the model dis-
+tribution, exposing the long-horizon stability in chaotic
+evolution. The central test in this regime is whether
+generated trajectories remain physical – on-attractor.
+Fig. 5a illustrates the embedding space of turbulent
+states by means of three-dimensional principal compo-
+nent analysis (PCA). Rather than the typical isotropic
+clouds – typified in the embedding manifolds of both the
+dense Transformer (Fig. 5b) and the language-centric
+o200k base tokeniser (Fig. 5c) – Leviathan offers in-
+stead a topology that is elongated, smooth and of low in-
+trinsic dimensionality. These three components capture
+85% of the explained variance, compared with only 14%
+for the dense transformer – a quantitative confirmation
+of the structural distinction. By preserving adjacency –
+from physical space to embedding space – the separable
+primitive provides the model an inductive bias lacking
+in standard sequence models.
+This structural advantage translates directly into long-
+horizon physical consistency. Under 20-step autore-
+gressive rollouts, the tested state-of-the-art deterministic
+operators (DeepONet, Fourier neural operator (FNO)
+and U-Net) suffer catastrophic drift to nonphysical mean
+states, as evidenced by an array of metrics – despite
+having parameter counts of the same order as Leviathan.
+Indeed, Fig. 5d–e illustrate the DeepONet and FNO
+having accumulated immense enstrophy log-ratio er-
+rors, total spectral energy log-ratio errors and spectral
+slope errors by t = 20. The FNO, having decayed to
+a zero state, “falls off” the spectral plots entirely. The
+U-Net preserves a small amount of spatial structure for
+longer, but nevertheless succumbs to the same drift-to-
+mean. Fig. 5f confirms this systemic failure, with the
+vorticity probability density functions of each of the
+three deterministic models rapidly collapsing to delta
+distributions, as well as in Fig. 6 with generated fields
+quickly flattening. Whilst the dense Transformer avoids
+this catastrophic collapse – even accurately predicting
+9
+a
+b
+c
+0.2
+0.1
+0.0
+0.1
+0.2
+Vorticity, 
+0.2
+0.1
+0.0
+0.1
+0.2
+Vorticity, 
+0.2
+0.4
+0.6
+0.8
+Token Norm
+DeepONet
+FNO
+U-Net
+Transformer
+Expected
+Top-50
+Top-5
+Top-1
+0
+2
+4
+6
+Enstrophy log-ratio
+d
+DeepONet
+FNO
+U-Net
+Transformer
+Expected
+Top-50
+Top-5
+Top-1
+0
+10
+20
+Spectral energy
+log-ratio
+NaN
+DeepONet
+FNO
+U-Net
+Transformer
+Expected
+Top-50
+Top-5
+Top-1
+0
+1
+2
+Spectral slope error
+NaN
+DeepONet
+FNO
+U-Net
+Transformer
+Expected
+Top-50
+Top-5
+Top-1
+0.0
+0.2
+0.4
+0.6
+0.8
+JS divergence
+DeepONet
+FNO
+U-Net
+Transformer
+Leviathan
+0
+1
+2
+3
+Parameters, 100M
+10
+0
+10
+1
+10
+14
+10
+10
+10
+6
+10
+2
+10
+2
+Energy Spectrum, E(k)
+t = 0
+e
+DNS
+DeepONet
+U-Net
+Transformer
+Leviathan
+10
+0
+10
+1
+t = 5
+10
+0
+10
+1
+Wavenumber, k
+t = 10
+10
+0
+10
+1
+t = 15
+10
+0
+10
+1
+t = 20
+0.05
+0.00
+0.05
+10
+1
+10
+0
+10
+1
+Probability density, P(
+)
+t = 0
+f
+DNS
+DeepONet
+U-Net
+Transformer
+Leviathan
+0.05
+0.00
+0.05
+t = 5
+0.05
+0.00
+0.05
+Vorticity
+t = 10
+0.05
+0.00
+0.05
+t = 15
+0.05
+0.00
+0.05
+t = 20
+Figure 5: Analysis of Leviathan as a foundation model for turbulence across three rollout seeds. a-c, three-
+dimensional principal components of the embeddings of the entire vocabulary set. a, Leviathan generates a continuous
+embedding manifold of low intrinsic dimensionality, with the visualised components explaining 85% of the variance. b,
+A dense Transformer embeds isotropically, explaining only 14% of the variance. c, the isotropic cloud of Leviathan’s
+embedding space when trained on the unstructured o200k base tokeniser. Despite the mathematical structure of
+quantised vorticity, the dense embedding space in b more closely resembles that of an unstructured language tokeniser.
+d, Quantitative validation of long-horizon – 20 timestep – physical consistency. Leviathan, under four sampling
+techniques (expectation, top-50, top-5, greedy) outperforms deterministic operators (DeepONet, Fourier neural operator,
+U-Net) across all metrics (left to right: enstrophy log-ratio error, total spectral energy log-ratio error, spectral slope error,
+Jensen–Shannon divergence) when controlling for parameters. The dense Transformer is competitive in enstrophy and
+Jensen-Shannon divergence. e, Evolution of radial energy spectra in time, with Leviathan best maintaining inertial-range
+statistics. The deterministic operators rapidly fall away from the direct numerical simulation (DNS) ground truth. The
+Fourier neural operator fades to a constant field in a single step, with flat spectrum. f, Evolution of the probability
+density function P(ω) of vorticity. Deterministic models drift catastrophically to a non-physical mean state – a delta
+distribution – whereas Leviathan preserves the heavy-tailed structure of the chaotic attractor. The dense Transformer
+retains some structure, avoiding collapse to a mean state.
+10
+Direct Numerical Simulation
+t = 0
+t = 5
+t = 10
+t = 15
+t = 20
+Fourier Neural Operator
+DeepONet
+U-Net
+Dense Transformer
+Leviathan
+0.100
+0.075
+0.050
+0.025
+0.000
+0.025
+0.050
+0.075
+0.100
+Vorticity, 
+Figure 6: Autoregressive rollout of turbulent flow over long horizons. A comparative visualisation of two-dimensional
+incompressible turbulence, with ground truth generated via direct numerical simulation at Mach 0.1 and a Reynolds
+number of 10 million. The ground truth is compared against state-of-the-art deterministic operators (Fourier neural
+operator, DeepONet, U-Net), as well as a dense Transformer and Leviathan both sampled via expectation. The operator
+learners decay to a mean state; the dense Transformer preserves a degree of structure but is fundamentally handicapped
+by its embedding approach. Leviathan qualitatively tracks the ground truth.
+enstrophy – it remains fundamentally handicapped by
+its isotropic embedding approach. As is visualised in
+Fig. 6, its generated fields degrade into unstructured
+noisy artefacts rather than exhibiting true turbulent be-
+haviour. Without the physics-aware inductive bias of the
+separable primitive, these results suggest that sequence
+11
+modelling alone does not suffice for a foundation model
+of turbulence.
+By contrast, Leviathan (whose distribution is sampled
+via expected value) avoids these pathologies by design.
+As evidenced in Fig. 5d, Leviathan matches the ground
+truth enstrophy as well as the dense transformer, but is
+superior by all other metrics: conservation of spectral
+energy, spectral dissipation and Jensen-Shannon diver-
+gence of the vorticity probability density functions. Gen-
+erated radial energy spectra closely follow those of the
+ground truth (Fig. 5e) and Fig. 5f shows that rollouts
+track the vorticity distributions of the ground truth field.
+Generated turbulent fields (Fig. 6) qualitatively match
+the behaviour of the ground truth, sustaining distinct and
+coherently evolving vortex structures throughout the 20-
+step rollout. These results establish that treating chaotic
+spatiotemporal evolution as a distributional sequence
+modelling task – facilitated by separable, neighbour-
+preserving embeddings – effectively eliminates the off-
+attractor drift characteristic of deterministic pointwise
+operators. By exploiting an emergent factorisability
+of turbulent dynamics, Leviathan effects a division of
+computational labour: the separable primitive ensures
+efficient structural fidelity; global spatiotemporal reason-
+ing is delegated to a monolithic Transformer backbone.
+This synergy validates our central hypothesis: compos-
+ite architectures – not pure monoliths – are essential for
+grounding predictive intelligence.
+Discussion
+The collective empirical performance of KHRONOS,
+SPAN, Janus and Leviathan substantiates the central the-
+sis of this work: that separability is a latent property of
+intelligent systems, often emerging in the coordinates or
+representations through which the system is expressed.
+Whether a standalone approximator, a variational trial
+space or a structured filter within a composite architec-
+ture, separable neural architectures enable the recovery
+of the underlying manifold of a target system. By fac-
+torising high-dimensional states without a concomitant
+loss in expressivity, this formalism reconciles the con-
+tinuity of physical law with the discrete nature of neu-
+ral frameworks, providing a mathematical substrate for
+foundational models of physics.
+The SNA is deployed as part of an MLP–SNA hybrid
+architecture, spline-based adaptive networks (SPAN).
+A dense layer learns how to best disentangle raw in-
+put streams to a low-rank latent space. This bears a
+conceptual resemblance to Koopman operator theory
+[40, 41], wherein nonlinear dynamics are expressed
+in coordinates that admit simpler evolution operators.
+SPAN is integrated into actor and critic networks within
+a deep deterministic policy gradient (DDPG) [42, 43]
+and soft actor-critic (SAC) frameworks for autonomous
+control. The SNA’s inductive bias enforces smooth ac-
+tor and critic mappings, whilst the factorised structure
+yields a better-conditioned action-value landscape. This
+stabilises policy gradients under the compounding de-
+mands of closed-loop control. Across online bench-
+marks spanning classical control, continuous MuJoCo
+locomotion and autonomous waypoint navigation in the
+CARLA simulator (see Supplementary Information §4)
+[44], SPAN achieves 30 −50% improvements in sam-
+ple efficiency and improved success rates ranging from
+1.3 −9× over parameter-matched MLP baselines [45].
+On offline expert datasets, SPAN outperforms the MLP
+baseline by an average factor of 6.7×.
+In the generative inversion of multiscale materials via
+Janus, an ablation confirms that the SNA head is indeed
+the critical driver of inversion quality. It outperforms a
+parameter-matched MLP baseline by 42−441% in FFT-
+validated stiffness errors across design points (Supple-
+mentary Information §5). This advantage is mechanistic:
+the multilinear Jacobian of the SNA produces a better-
+conditioned loss landscape during inversion, reducing
+entrapment in the scattered local minima afflicting the
+more entangled MLP. Nevertheless, gradient hallucina-
+tion – the recovery of latent codes that “trick” the predic-
+tor whilst diverging from true physics – remains an open
+problem for both architectures; Janus mitigates it with-
+out resolution. Promising avenues include adversarial
+training of the predictive head, explicit Jacobian regu-
+larisation, physics-informed latent penalties and active
+learning. Resolving hallucination more fundamentally
+would reduce ensemble sizes required for confidence. It
+would also extend the approach to regimes poorly cov-
+ered by training data, such as the high-porosity regime,
+where gradient fidelity is weakest.
+Whilst the mathematical formalism (Section ) of the
+separable neural architecture encompasses a broad repre-
+sentational class, empirical validations were deliberately
+restricted to a more fundamental instantiation (Canoni-
+cal Polyadic structure with univariate B-spline atoms).
+That this instance is sufficient to achieve state-of-the-
+art performance across disparate fields underscores the
+generalisability of this inductive bias. Exploring higher-
+order interaction structures, alternative basis functions
+and more decompositions within this formalism remains
+a frontier for future inquiry.
+Despite these advantages, the practical implementa-
+tion of this formalism presents open challenges. Whilst
+separability demonstrably emerges in the studied sys-
+tems, identifying separable representations or – more
+pertinently – tokenisation schemes to expose this struc-
+ture remains a non-trivial challenge. In particular, as
+made most explicit in Fig. 5a, Leviathan is particu-
+12
+larly effective at extracting structure from continuous
+tokenisation schemes. The isotropic cloud seen in Fig.
+5c, however, illustrates that arbitrary token indexing
+suppresses the neighbourhood structure upon which the
+separable primitive relies – isolating tokenisation, not
+architecture, as the bottleneck for language. Even so,
+Leviathan demonstrates strong language modelling per-
+formance [1]: evaluation on the Pile dataset across the
+60 −420M parameter regime yields 6.7 −18.1% reduc-
+tions in perplexity. This is equivalent to the performance
+of a dense model up to twice Leviathan’s size. The
+path forward is clear: a structure-aware tokenisation
+scheme capable of preserving neighbourhood relations
+in linguistic space. Such a scheme would expose the sep-
+arability that the turbulence results confirm the primitive
+stands ready to exploit – and that these results suggest
+lies latent in language itself.
+Methods
+Preliminaries.
+For the present work, the ambient di-
+mension is denoted d ∈N with coordinates [0, 1]d. An
+interactivity hyperparameter k ≤d is also introduced,
+confining the maximum order of featurewise interaction.
+For any subset S ⊆[d] with |S| ≤k, xS denotes the
+projection of x onto S. A hyperparameter r constrains
+interaction rank. Let ρ : R →R be an activation func-
+tion.
+Foundational constituents.
+The architecture is con-
+structed from learnable functional components, herein
+termed atoms. Formally, an atom is defined as the learn-
+able function ϕ(S) : [0, 1]|S| × ΘS →R, parameterised
+by θS. Interactions between these atoms are subse-
+quently governed by an interaction object C; this is a
+collection of coefficients cS assigned to specific subsets
+of coordinates S ⊆[d]. This object stores the abstract
+set of permissible featurewise interactions within the
+model. In particular, C admits a canonical embedding
+into a k-sparse, order-d interactivity tensor via the map-
+ping E : {cS} →T ∈Rd×···×d. The rank of this
+interactivity tensor T is strictly bounded by r, and it is
+nonzero only for subsets |S| ≤k.
+Separable neural architecture.
+A Separable Neural
+Architecture (SNA), parameterised by Θ = {θS, cS}, is
+a mapping f : [0, 1]d × Θ →R defined as
+f(x; cS; θS) = ρ
+
+
+X
+S∈Supp(C)
+cSϕ(S)(xS; θS)
+
+. (4)
+This function represents an element of the functional
+class
+Fk,r =
+n
+f(x, Θ) : rank(E(C)) ≤r,
+|S| ≤k, ∀S ∈Supp(C)
+o
+.
+(5)
+Recovery of model families.
+This definition gener-
+alises several contemporary model families based on the
+interactivity order k:
+• Generalised additive models. Recovered when
+k = 1;
+• Generalised quadratic models. Recovered when
+k = 2;
+• Canonical-Polyadic-decomposed models. Recov-
+ered when k = d, |S| = d, atoms are products of
+univariate sub-atoms and rank(E(C)) ≤r.
+Tensorised classes.
+A subclass of SNAs, the tensor
+decomposition (TD) class is defined by setting k = d,
+thus S = [d], and embedding the interaction object as
+a tensor decomposition with C = E−1(T ) and rank r.
+An element of this class takes the form
+f(x; ΦT D) = ρ
+
+
+r
+X
+j=1
+c(j)ϕ(j)(x; θ(j))
+
+.
+(6)
+This class specialises further into its most fundamental
+subclass, the Canonical Polyadic (CP)-class. Here atoms
+are restricted to be products of univariate sub-atoms ψ(j)
+i
+.
+An element of this class is written
+f(x; ΦCP ) = ρ
+
+
+r
+X
+j=1
+c(j)
+d
+Y
+i=1
+ψ(j)
+i (xi; θ(j)
+i )
+
+.
+(7)
+Crucially, this structural restriction does not forfeit ex-
+pressivity. Consider the functional class of CP-SNAs
+Fr
+CP under identity activation ρ(x) = x. Then, if each
+sub-atom ψ(j)
+i
+is continuous on the unit segment, the
+union over finite ranks F = S∞
+r=1 Fr
+CP is uniformly
+convergent. That is to say F is dense in C
+ [0, 1]d
+with
+respect to the infinity norm ∥·∥∞. Lp-convergence, that
+F is dense in Lp
+ [0, 1]d
+for any p ≥1, immediately
+follows.
+As the CP decomposition is the most fundamental
+tensor decomposition, it follows as corollary that TD-
+class SNAs are also dense in C
+ [0, 1]d
+. This includes
+the Tucker [46] and Tensor train [47] decompositions,
+amongst others [48]. Notably, then, every target function
+can be approximated arbitrarily well by some TD-class
+SNA with finite rank r.
+13
+Variational domains and trial spaces.
+In extending
+this formalism to variational problems, let Ω⊂Rn
+be an n-dimensional spatial domain, [0, T] a temporal
+interval and P ⊂Rm a parametric space. The combined
+domain is the Cartesian product X = Ω× [0, T] × P,
+with ambient dimension d = n + 1 + m. Coordinates
+are indexed i ∈{1, . . . , d} covering space, time and
+parameters respectively. The separable trial space is the
+Hilbert tensor product V = Nd
+i=1 V (i). For a semi-
+linear form a : V × V →R and linear functional
+ℓ: V →R, u ∈V is sought such that a(u, v) = ℓ(v)
+for all v ∈V .
+Variational separable neural architecture.
+A vari-
+ational separable neural architecture (VSNA), parame-
+terised by Θ, is a trial function u ∈V defined as
+u(x; cS; θS) =
+X
+S∈Supp(C)
+cSϕ(S)(xS; θS)
+(8)
+where each atom ϕ(S) ∈V (S) = N
+i∈S V (i) respects
+the local variational structure of its coordinates.
+This trial function represents an element of the
+finite-dimensional approximation subspace Fk,r
+=
+{u(x, Θ) ∈V : rank(E(C)) ≤r, |S| ≤k, ∀S ∈Supp(C)}.
+Variational tensorised classes.
+In a spatiotemporal–
+parametric domain X with ambient dimension d, let
+the variational trial space be written V = Nd
+i=1 V (i),
+with each coordinate xi associated with the univariate
+functional space V (i). Then the class of CP-VSNA trial
+functions is defined by:
+Fr =
+n
+u(x; θ) =
+r
+X
+j=1
+d
+Y
+i=1
+ψ(j)
+i (xi; θ)
+ ψ(j)
+i
+∈V (i), θ ∈Θ
+o
+.
+(9)
+given a learnable parameter set Θ. Thus, Fr ⊂V serves
+as the finite-dimensional approximation subspace for a
+Galerkin method utilizing SNA-ansatz functions.
+Variational guarantees.
+To establish the classical va-
+lidity of this trial space, let a : V × V →R be a
+bounded and coercive bilinear form with coercivity con-
+stant c0 > 0 and boundedness constant c1 > 0. De-
+noting a linear functional ℓ∈V ∗, and fixing the basis
+sub-atoms ψ(j)
+i
+, the VSNA formalism satisfies four core
+variational guarantees:
+• Well-posedness:
+The Galerkin approximation,
+a(ur, vr) = ℓ(vr) for all vr ∈Fr, admits a unique
+solution ur ∈Fr.
+• Quasi-optimality: Let u ∈V be the unique so-
+lution to the exact weak problem.
+The VSNA
+Galerkin solution ur is quasi-optimal, bounded
+strictly by the best approximation within the trial
+space: ∥u −ur∥V ≤c1
+c0 minvr∈Fr ∥u −vr∥V .
+• Convergence: If each univariate sub-atom family
+ψ(j)
+i (· ; θ) is dense in V (i), then S
+r Fr is dense in
+V with respect to the Hilbert norm ∥· ∥V . Conse-
+quently, as the interaction rank r →∞, the approx-
+imation error εr →0, ensuring VSNA Galerkin
+solutions converge to the exact solution u ∈V .
+• Stability: The VSNA Galerkin solution ur satisfies
+the absolute stability bound ∥ur∥V ≤
+1
+c0 ∥ℓ∥V ∗,
+where the dual norm is defined as ∥ℓ∥V ∗
+=
+supv∈V,v̸=0
+ℓ(v)
+∥v∥V .
+Taken together, these guarantees prove that for any suffi-
+ciently regular spatiotemporal–parametric problem, the
+VSNA forms a well-posed, quasi-optimal, stable and
+convergent trial space.
+Declarations
+• Funding
+Not applicable
+• Conflict of interest:
+The authors declare no competing interests
+• Ethics approval and consent to participate
+Not applicable
+• Consent for publication
+Not applicable
+• Data availability
+The Inconel 718 [4], L-BOM [22], PDEBench [30]
+and Sketch-to-stress [49] datasets are all publicly
+available via their respective publications.
+• Materials availability
+Not applicable
+• Code availability
+Code for all architectures presented in the main
+work are publicly available at:
+https://github.com/RTBatley/
+KHRONOS;
+https://github.com/RTBatley/VSNA;
+https://github.com/RTBatley/Janus;
+and
+14
+https://github.com/RTBatley/
+Leviathan.
+Parameters
+for
+the
+mod-
+els
+in
+Leviathan
+are
+found
+at
+https:
+//doi.org/10.5281/zenodo.18973969.
+• Author contributions
+R.T.B.: Conceptualisation, Methodology, Formal
+analysis, Resources, Software (KHRONOS, VSNA,
+Janus, Leviathan), Investigation, Visualisation,
+Writing – original draft, Writing – review & edit-
+ing.
+A.S.:
+Software (Sketch-to-stress adaptation of
+Janus), Investigation, Visualisation, Writing – re-
+view & editing.
+R.M.: Software (SPAN), Investigation, Writing –
+review & editing.
+A.K.:
+Software (Inconel 718 adaptation of
+KHRONOS), Investigation.
+S.S.: Conceptualisation, Resources, Supervision,
+Writing – review & editing.
+References
+[1] Reza T. Batley and Sourav Saha.
+A separable
+architecture for continuous token representation in
+language models, 2026. URL https://arxiv.
+org/abs/2601.22040.
+[2] Reza T. Batley and Sourav Saha.
+Khronos:
+a kernel-based neural architecture for rapid,
+resource-efficient scientific computation, 2025.
+URL
+https://arxiv.org/abs/2505.
+13315.
+[3] Apurba Sarker, Reza T. Batley, Darshan Saro-
+jini, and Sourav Saha. A Kernel-based Resource-
+efficient Neural Surrogate for Multi-fidelity Pre-
+diction of Aerodynamic Field.
+AIAA SciTech
+Forum,
+2026.
+doi:
+10.2514/6.2026-0043.
+URL https://arc.aiaa.org/doi/abs/
+10.2514/6.2026-0043.
+[4] X. Xie, J. Bennett, S. Saha, et al. Mechanistic data-
+driven prediction of as-built mechanical properties
+in metal additive manufacturing. npj Computa-
+tional Materials, 7(1):86, 2021. doi: 10.1038/
+s41524-021-00555-z.
+URL https://doi.
+org/10.1038/s41524-021-00555-z.
+[5] L. Fang,
+L. Cheng,
+J. A. Glerum,
+et al.
+Data-driven analysis of process, structure, and
+properties of additively manufactured inconel
+718
+thin
+walls.
+npj
+Computational
+Ma-
+terials,
+8(1):126,
+2022.
+doi:
+10.1038/
+s41524-022-00808-5.
+URL https://doi.
+org/10.1038/s41524-022-00808-5.
+[6] Tianqi Chen and Carlos Guestrin. Xgboost: A
+scalable tree boosting system. In Proceedings of
+the 22nd ACM SIGKDD International Conference
+on Knowledge Discovery and Data Mining, KDD
+’16, page 785–794. ACM, August 2016. doi: 10.
+1145/2939672.2939785. URL http://dx.doi.
+org/10.1145/2939672.2939785.
+[7] Chanwook Park, Sourav Saha, Jiachen Guo, Han-
+tao Zhang, Xiaoyu Xie, Miguel A. Bessa, Dong
+Qian, Wei Chen, Gregory J. Wanger, Jian Cao,
+Thomas J. R. Hughes, and Wing Kam Liu. Unify-
+ing machine learning and interpolation theory via
+interpolating neural networks. Nature Communi-
+cations, 16(1):8753, 2025. ISSN 2041-1723. doi:
+10.1038/s41467-025-63790-8.
+[8] Sourav Saha, Zhengtao Gan, Lin Cheng, Jiaying
+Gao, Orion L. Kafka, Xiaoyu Xie, Hengyang Li,
+Mahsa Tajdari, H. Alicia Kim, and Wing Kam
+Liu. Hierarchical deep learning neural network
+(hidenn): An artificial intelligence (ai) framework
+for computational science and engineering. Com-
+puter Methods in Applied Mechanics and Engi-
+neering, 373:113452, 2021. doi: 10.1016/j.cma.
+2020.113452.
+[9] Lei Zhang, Ye Lu, Shaoqiang Tang, and Wing Kam
+Liu. Hidenn-td: Reduced-order hierarchical deep
+learning neural networks.
+Computer Methods
+in Applied Mechanics and Engineering, 389:
+114414, 2022. ISSN 0045-7825. doi: https://doi.
+org/10.1016/j.cma.2021.114414.
+URL https:
+//www.sciencedirect.com/science/
+article/pii/S0045782521006629.
+[10] Ziming Liu,
+Yixuan Wang,
+Sachin Vaidya,
+Fabian Ruehle, James Halverson, Marin Soljaˇci´c,
+Thomas Y. Hou, and Max Tegmark.
+Kan:
+Kolmogorov-arnold networks,
+2025.
+URL
+https://arxiv.org/abs/2404.19756.
+[11] M. Raissi, P. Perdikaris, and G.E. Karniadakis.
+Physics-informed neural networks: A deep learn-
+ing framework for solving forward and inverse
+problems involving nonlinear partial differential
+equations.
+Journal of Computational Physics,
+378:686–707, 2019. ISSN 0021-9991. doi: https:
+//doi.org/10.1016/j.jcp.2018.10.045. URL https:
+//www.sciencedirect.com/science/
+article/pii/S0021999118307125.
+15
+[12] Les Piegl and Wayne Tiller. The NURBS Book.
+Monographs in Visual Communication. Springer,
+2 edition, 1997. doi: 10.1007/978-3-642-59223-2.
+[13] Francisco Chinesta, Pierre Ladev`eze, and El´ıas
+Cueto.
+A short review on model order re-
+duction based on proper generalized decompo-
+sition.
+Archives of Computational Methods in
+Engineering, 18(4):395–404, 2011.
+doi:
+10.
+1007/s11831-011-9064-7. URL https://doi.
+org/10.1007/s11831-011-9064-7.
+[14] Geoffrey K Vallis. Atmospheric and oceanic fluid
+dynamics: fundamentals and large-scale circula-
+tion. Cambridge University Press, 2017.
+[15] Reza T. Batley and Sourav Saha.
+A Uni-
+fied Generative-Predictive Framework for De-
+terministic Inverse Design.
+AIAA SciTech
+Forum,
+2026.
+doi:
+10.2514/6.2026-0365.
+URL https://arc.aiaa.org/doi/abs/
+10.2514/6.2026-0365.
+[16] Martin P. Bendsøe and Noboru Kikuchi. Generat-
+ing optimal topologies in structural design using a
+homogenization method. Computer Methods in Ap-
+plied Mechanics and Engineering, 71(2):197–224,
+1988. doi: 10.1016/0045-7825(88)90086-2.
+[17] Martin P. Bendsøe and Ole Sigmund. Material
+interpolation schemes in topology optimization.
+Archive of Applied Mechanics, 69(9-10):635–654,
+1999. doi: 10.1007/s004190050248.
+[18] Norman A. Fleck, Vikram S. Deshpande, and
+Michael F. Ashby. Micro-architectured materials:
+Past, present and future. Proceedings of the Royal
+Society A: Mathematical, Physical and Engineer-
+ing Sciences, 466(2121):2495–2516, 2010. doi:
+10.1098/rspa.2010.0215.
+[19] H. Rodrigues, P. Fernandes, and J. M. Guedes. A
+hierarchical optimization of material and structure.
+Structural and Multidisciplinary Optimization, 24
+(1):1–10, 2002. doi: 10.1007/s00158-002-0209-z.
+[20] F. Feyel and J.-L. Chaboche. Fe2 multiscale ap-
+proach for modelling the elastoviscoplastic be-
+haviour of long fibre sic/ti composite materials.
+Computer Methods in Applied Mechanics and En-
+gineering, 183(3-4):309–330, 2000. doi: 10.1016/
+S0045-7825(99)00224-8.
+[21] Julian Panetta, Qingnan Zhou, Luigi Malomo,
+Nico Pietroni, Paolo Cignoni, and Denis Zorin.
+Elastic textures for additive fabrication.
+ACM
+Transactions on Graphics, 34(4):135:1–135:12,
+2015. doi: 10.1145/2766937.
+[22] Lili Wang, Jingxuan Feng, Xiaoya Zhai, Jiacheng
+Han, Kai Chen, Winston Wai Shing Ma, Ligang
+Liu, and Xiao-Ming Fu. Data-driven inverse design
+of multifunctional bicontinuous multiscale struc-
+tures. Nature Communications, 17(1), 2026. doi:
+10.1038/s41467-025-68089-2.
+[23] Wenjie Wang, Xiaoyu Yu, Xian Zheng, et al. Deep
+generative modeling for mechanistic-based learn-
+ing and design of metamaterial systems. Com-
+puter Methods in Applied Mechanics and Engi-
+neering, 372:113377, 2020. doi: 10.1016/j.cma.
+2020.113377.
+[24] Jan H. Bastek, Dennis M. Kochmann, et al. In-
+verting the structure–property map of truss meta-
+materials by deep learning. Extreme Mechanics
+Letters, 53:101700, 2022. doi: 10.1016/j.eml.2022.
+101700.
+[25] Evan Garner, H. M. A. Kolken, Chen Wang,
+Amir A. Zadpoor, and Jun Wu. Compatibility in
+microstructural optimization for additive manufac-
+turing. Additive Manufacturing, 28:425–434, 2019.
+doi: 10.1016/j.addma.2019.05.021.
+[26] Xiaoyu Zheng, Xiaoyu Yu, Wenjie Wang, et al.
+Data-driven multiscale design of cellular mate-
+rials with tailored mechanical properties. Com-
+puter Methods in Applied Mechanics and Engi-
+neering, 380:113782, 2021. doi: 10.1016/j.cma.
+2021.113782.
+[27] Ashish Bora, Ajil Jalal, Eric Price, and Alexan-
+dros G. Dimakis. Compressed sensing using gen-
+erative models. In Proceedings of the 34th Inter-
+national Conference on Machine Learning, pages
+537–546, 2017.
+[28] Raymond A. Yeh, Chen Chen, Teck Yian Lim,
+Mark Hasegawa-Johnson, Minh N. Do, and
+Hanspeter Pfister. Semantic image inpainting with
+deep generative models. In Proceedings of the
+IEEE Conference on Computer Vision and Pat-
+tern Recognition, pages 5485–5493, 2017. doi:
+10.1109/CVPR.2017.579.
+[29] Ian J. Goodfellow, Jonathon Shlens, and Christian
+Szegedy. Explaining and harnessing adversarial
+examples, 2015. URL https://arxiv.org/
+abs/1412.6572.
+[30] Makoto Takamoto, Timothy Praditia, Raphael Lei-
+teritz, Daniel MacKinlay, Francesco Alesiani, Dirk
+Pfl¨uger, and Mathias Niepert. Pdebench: An ex-
+tensive benchmark for scientific machine learning.
+16
+In Advances in Neural Information Processing Sys-
+tems, volume 35, pages 1596–1611. Curran Asso-
+ciates, Inc., 2022.
+[31] Makoto Takamoto, Timothy Praditia, Raphael Lei-
+teritz, Dan MacKinlay, Francesco Alesiani, Dirk
+Pfl¨uger, and Mathias Niepert. PDEBench Datasets,
+2022. URL https://doi.org/10.18419/
+DARUS-2986.
+[32] Zongyi Li, Nikola Kovachki, Kamyar Azizzade-
+nesheli, Burigede Liu, Kaushik Bhattacharya, An-
+drew Stuart, and Anima Anandkumar.
+Fourier
+neural operator for parametric partial differential
+equations, 2021. URL https://arxiv.org/
+abs/2010.08895.
+[33] Lu Lu, Pengzhan Jin, Guofei Pang, Zhongqiang
+Zhang, and George Em Karniadakis.
+Learn-
+ing nonlinear operators via deeponet based on
+the universal approximation theorem of opera-
+tors. Nature Machine Intelligence, 3(3):218–229,
+March 2021. ISSN 2522-5839. doi: 10.1038/
+s42256-021-00302-5. URL http://dx.doi.
+org/10.1038/s42256-021-00302-5.
+[34] Luis Mandl, Somdatta Goswami, Lena Lam-
+bers, and Tim Ricken.
+Separable physics-
+informed deeponet:
+Breaking the curse of
+dimensionality
+in
+physics-informed
+machine
+learning.
+Computer
+Methods
+in
+Applied
+Mechanics
+and
+Engineering,
+434:117586,
+2025.
+ISSN 0045-7825.
+doi: https://doi.org/
+10.1016/j.cma.2024.117586.
+URL https:
+//www.sciencedirect.com/science/
+article/pii/S0045782524008405.
+[35] Shuhao Cao. Choose a transformer: Fourier or
+Galerkin. In Advances in Neural Information Pro-
+cessing Systems (NeurIPS 2021), volume 34, 2021.
+URL https://openreview.net/forum?
+id=ssohLcmn4-r.
+[36] Ruoxi Jiang, Peter Y. Lu, Elena Orlova, and Re-
+becca Willett. Training neural operators to preserve
+invariant measures of chaotic attractors. In Pro-
+ceedings of the 37th International Conference on
+Neural Information Processing Systems, NIPS ’23,
+Red Hook, NY, USA, 2023. Curran Associates Inc.
+[37] S. Scher and G. Messori. Weather and climate
+forecasting with neural networks:
+using gen-
+eral circulation models (gcms) with different
+complexity as a study ground.
+Geoscien-
+tific
+Model
+Development,
+12(7):2797–2809,
+2019.
+doi:
+10.5194/gmd-12-2797-2019.
+URL
+https://gmd.copernicus.org/
+articles/12/2797/2019/.
+[38] Colin Raffel, Noam Shazeer, Adam Roberts,
+Katherine Lee, Sharan Narang, Michael Matena,
+Yanqi Zhou, Wei Li, and Peter J. Liu. Explor-
+ing the limits of transfer learning with a uni-
+fied text-to-text transformer, 2023. URL https:
+//arxiv.org/abs/1910.10683.
+[39] Thomas Wang, Adam Roberts, Daniel Hesslow,
+Teven Le Scao, Hyung Won Chung, Iz Beltagy,
+Julien Launay, and Colin Raffel. What language
+model architecture and pretraining objective work
+best for zero-shot generalization?, 2022.
+URL
+https://arxiv.org/abs/2204.05832.
+[40] Bethany Lusch, J. Nathan Kutz, and Steven L.
+Brunton. Deep learning for universal linear em-
+beddings of nonlinear dynamics.
+Nature Com-
+munications, 9(1):4950, 2018.
+doi: 10.1038/
+s41467-018-07210-0.
+[41] Steven L. Brunton, Joshua L. Proctor, and
+J. Nathan Kutz. Discovering governing equations
+from data by sparse identification of nonlinear dy-
+namical systems.
+Proceedings of the National
+Academy of Sciences, 113(15):3932–3937, 2016.
+doi: 10.1073/pnas.1517384113.
+[42] Timothy P. Lillicrap, Jonathan J. Hunt, Alexan-
+der Pritzel, Nicolas Heess, Tom Erez, Yuval Tassa,
+David Silver, and Daan Wierstra. Continuous con-
+trol with deep reinforcement learning, 2019. URL
+https://arxiv.org/abs/1509.02971.
+[43] ´Oscar P´erez-Gil, Rafael Barea, Elena L´opez-
+Guill´en, Luis M. Bergasa, Carlos G´omez-Hu´elamo,
+Rodrigo Guti´errez, and Alejandro D´ıaz-D´ıaz.
+Deep reinforcement learning based control for au-
+tonomous vehicles in carla.
+Multimedia Tools
+and Applications, 81(3):3553–3576, 2022. doi:
+10.1007/s11042-021-11437-3.
+[44] Alexey Dosovitskiy, German Ros, Felipe Codev-
+illa, Antonio Lopez, and Vladlen Koltun. Carla:
+An open urban driving simulator, 2017.
+URL
+https://arxiv.org/abs/1711.03938.
+[45] Rajib Mostakim, Reza T. Batley, and Sourav
+Saha. Agile reinforcement learning through sep-
+arable neural architecture, 2026. URL https:
+//arxiv.org/abs/2601.23225.
+[46] Ledyard R Tucker. Some mathematical notes on
+three-mode factor analysis. Psychometrika, 31(3):
+279–311, 1966.
+17
+[47] Ivan V Oseledets.
+Tensor-train decomposition.
+SIAM Journal on Scientific Computing, 33(5):
+2295–2317, 2011.
+[48] Tamara G Kolda and Brett W Bader. Tensor de-
+compositions and applications. SIAM Review, 51
+(3):455–500, 2009.
+[49] Deng Yu, Chufeng Xiao, Manfred Lau, and
+Hongbo Fu.
+Sketch2stress:
+Sketching with
+structural stress awareness. IEEE Transactions
+on Visualization and Computer Graphics, 30
+(10):6851–6865, 2024.
+doi:
+10.1109/TVCG.
+2023.3342119. URL https://doi.org/10.
+1109/TVCG.2023.3342119.
+18
