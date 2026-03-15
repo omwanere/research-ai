@@ -26,10 +26,11 @@ def search_papers(query):
 
     # Display results
     for result in results.points:
-        print("Paper:", result.payload["file"])
-        print("Similarity Score:", round(result.score, 4))
-        print("-" * 40)
 
+        print("Chunk:", result.payload["chunk_file"])
+        print("Score:", round(result.score, 4))
+        print("Preview:", result.payload["text"][:200])
+        print("-" * 50)
 
 if __name__ == "__main__":
 

@@ -4,3 +4,20 @@ __pycache__/
 node_modules/
 *.pdf
 *.db
+
+# data files
+Data/pdfs
+Data/processed
+Data/chunks
+Data/vector_db
+
+# embeddings
+Data/*.json
+
+# python
+__pycache__/
+*.pyc
+
+# virtual env
+venv/
+.env
