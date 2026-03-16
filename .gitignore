@@ -21,3 +21,12 @@ __pycache__/
 # virtual env
 venv/
 .env
+
+# node
+frontend/node_modules
+
+# next
+frontend/.next
+
+# env
+.env
