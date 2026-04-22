@@ -1,0 +1,1542 @@
+Incremental Neural Network Verification via
+Learned Conflicts
+Raya Elsaleh1, Liam Davis2, Haoze Wu2, and Guy Katz1
+1 Hebrew University of Jerusalem, Jerusalem, Israel
+{raya.elsaleh,g.katz}@mail.huji.ac.il
+2 Amherst College, Amherst, USA
+{ljdavis27,hwu}@amherst.edu
+Abstract. Neural network verification is often used as a core component
+within larger analysis procedures, which generate sequences of closely
+related verification queries over the same network. In existing neural
+network verifiers, each query is typically solved independently, and in-
+formation learned during previous runs is discarded, leading to repeated
+exploration of the same infeasible regions of the search space. In this
+work, we aim to expedite verification by reducing this redundancy. We
+propose an incremental verification technique that reuses learned conflicts
+across related verification queries. The technique can be added on top
+of any branch-and-bound-based neural network verifier. During verifi-
+cation, the verifier records conflicts corresponding to learned infeasible
+combinations of activation phases, and retains them across runs. We
+formalize a refinement relation between verification queries and show
+that conflicts learned for a query remain valid under refinement, enabling
+sound conflict inheritance. Inherited conflicts are handled using a SAT
+solver to perform consistency checks and propagation, allowing infeasible
+subproblems to be detected and pruned early during search. We imple-
+ment the proposed technique in the Marabou verifier and evaluate it on
+three verification tasks: local robustness radius determination, verification
+with input splitting, and minimal sufficient feature set extraction. Our
+experiments show that incremental conflict reuse reduces verification
+effort and yields speedups of up to 1.9× over a non-incremental baseline.
+1
+Introduction
+Deep neural networks (DNNs) are increasingly deployed in safety-critical appli-
+cations [3], including autonomous driving [10,30], medical diagnosis [19], and
+aerospace systems [18,24]. Their strong empirical performance has driven major
+advances in tasks such as control and image recognition. Despite this success,
+neural networks remain largely opaque and difficult to reason about, raising
+serious concerns regarding their reliability and safety in critical settings.
+To address this issue, numerous approaches have been developed for neural
+network verification, with the goal of providing rigorous guarantees about network
+behavior. For networks with piecewise-linear activation functions, such as ReLUs,
+the verification problem is NP-complete [24], which hinders scalability; but as
+arXiv:2603.12232v1  [cs.LO]  12 Mar 2026
+2
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+neural networks are adopted across increasingly diverse and high-stakes domains,
+the demand for scalable verification techniques continues to grow. Improving the
+efficiency of neural network verification is therefore imperative.
+Examining how DNN verification is used in practice, we observe that it is often
+not performed as a single, isolated query, but rather invoked repeatedly within
+larger analysis procedures. For example, in formal explainability, verification
+queries are issued repeatedly to reason about the contribution of different input
+features to a given prediction under progressively refined constraints [8,42,43,12];
+similarly, in robustness radius computation, verification queries are invoked
+iteratively to narrow down the maximum safe perturbation radius around a given
+input [18,25,33]. Such analyses naturally give rise to sequences of closely related
+verification queries that differ in limited aspects of their specifications, such as
+refined input domains or strengthened output constraints. Despite this, current
+verification tools do not explicitly exploit this structural similarity: each query is
+restarted from scratch, and information derived during previous runs is discarded.
+In this work, we seek to mitigate these inefficiencies by reusing lemmas
+derived from earlier verification runs to accelerate verification of subsequent
+queries. Similar incremental solving techniques have proven successful in SAT
+and SMT solving [6,14,16]. In the case of neural network verification, previous
+work has considered proof transfer for abstract-interpretation-based methods [37]
+and warm-starting branch-and-bound by heuristically resuming the search from
+leaf nodes of search trees generated from prior solver runs [36,34]. However, none
+of the previous work has explored reusing lemmas across multiple invocations of
+branch-and-bound-based complete verifiers, which is the focus of this work.
+Our incremental verification approach is designed for sequences of closely
+related properties on the same neural network. Our approach records conflicts
+that arise during branch-and-bound verification, where each conflict captures
+an infeasible combination of branching decisions. These conflicts are preserved
+beyond individual verification runs and reused in subsequent queries with refined
+specifications. We formally define a refinement condition for the conflict to
+remain valid and show that this condition can be established in several important
+applications of neural network verification. The inherited conflicts allow the
+verifier to immediately prune previously explored infeasible regions, avoiding
+redundant analysis and computation.
+We develop a framework for conflict recording and sound reuse that integrates
+directly with branch-and-bound-based verifiers, and employ a SAT solver to
+efficiently manage and apply large collections of learned conflicts during solving.
+The technique can be added on top of any branch-and-bound-based neural network
+verifier. To investigate the effectiveness of the proposed approach, we instantiate
+it in the Marabou verifier [26,24,40] and perform a thorough evaluation on
+three representative verification tasks—robustness radius computation, iterative
+input splitting, and formal explanation—and demonstrate consistent empirical
+reductions in verification runtime, with speedups of up to 1.9× compared to the
+non-incremental baseline.
+Incremental Neural Network Verification via Learned Conflicts
+3
+The rest of the paper is organized as follows. Section 2 introduces the neces-
+sary background on neural network verification, branch-and-bound search, case
+splitting, and bound propagation. Section 3 presents our incremental verification
+framework, including conflict clauses, query refinement, and the sound reuse
+of learned conflicts, and describes the implementation details of the proposed
+approach. Section 4 evaluates the approach on several verification tasks and dis-
+cusses the experimental results. Section 5 reviews related work. Finally, Section 6
+outlines directions for future work, and Section 7 concludes the paper.
+2
+Background
+2.1
+Neural Networks and the Verification Problem
+Neural Networks. A deep neural network is a sequence of L layers, where layer i
+contains d(i) neurons, with i = 0 denoting the input layer and i = L the output
+layer [20]. Such a network defines a function f : Rd(0) →Rd(L). Each layer applies
+an affine transformation followed by an activation function. In this work, we focus
+on networks with ReLU activations, ReLU(t) = max(0, t), though the approach
+extends naturally to other piecewise-linear activations.
+For each layer i, the computation is given by z(i) = W(i)x(i−1) + b(i) and
+x(i) = ReLU(z(i)), where x(0) = x0 is the network input. We denote by z(i)
+j
+and x(i)
+j
+the pre- and post-activation values of the j-th neuron in layer i. Each
+ReLU neuron is associated with a Boolean phase variable r(i)
+j , where r(i)
+j
+= ⊤
+corresponds to the active phase (z(i)
+j
+≥0) and r(i)
+j
+= ⊥to the inactive phase
+(z(i)
+j
+< 0).
+Verification Queries. Neural network verification asks whether a network can
+exhibit undesired behavior. A verification query for a network f : Rd(0) →Rd(L)
+is defined by a pair (X, Y), where X ⊆Rd(0) and Y ⊆Rd(L) specify the input
+and output regions, respectively, and asks whether ∃x ∈X such that f(x) ∈Y.
+Typically, both regions are described by linear constraints, with Y representing
+an undesired output set. A query is answered SAT if such an input exists and
+UNSAT otherwise.
+2.2
+Branch-and-Bound Verification
+Most modern neural network verifiers combine case splitting with bound propa-
+gation, a paradigm commonly referred to as branch-and-bound, to reason about
+the disjunctive behavior induced by ReLU activations [24,26,47,39,11,15,5,35]. In
+this work, we focus on the case-splitting component.
+Case Splitting. Verification of ReLU neural networks relies on case splitting over
+ReLU activation phases. Each split fixes a single phase variable r(i)
+j
+to either the
+active or inactive case, i.e., r(i)
+j
+= ⊤or r(i)
+j
+= ⊥, thereby refining the original
+verification query into independent subproblems.
+4
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+r1
+r2
+r3
+UNSAT
+¬r3
+UNSAT
+r3
+¬r2
+r3
+UNSAT
+r3
+r4
+UNSAT
+¬r4
+UNSAT
+r4
+¬r3
+r2
+¬r1
+r2
+SAT
+¬r2
+r3
+?
+¬r3
+?
+r3
+r2
+r1
+Fig. 1: Branch-and-bound search tree over ReLU phase decisions.
+Branch-and-Bound Search and Search Tree. Given a neural network f and a
+verification query q = (X, Y), branch-and-bound verification explores the space
+of ReLU activation phases induced by q by repeated case splitting, inducing a
+search tree (Figure 1).
+The root of the tree corresponds to the original query with no fixed phase
+decisions. Each node is associated with a partial assignment, also called a decision
+trail, π = {ℓ1, . . . , ℓk}, where each literal ℓi ∈{r(i)
+j , ¬r(i)
+j } fixes the activation
+phase of a ReLU neuron. The decision trail π defines a refined subproblem
+obtained by conjoining the corresponding phase constraints with the original
+query, and edges correspond to individual case splits extending π by one additional
+literal. For readability, Figure 1 uses r1, r2, r3, r4 to denote phase variables. For
+example, the double-circled node in Figure 1 corresponds to the decision trail
+π = {¬r1, r2}. At each node, the verifier applies bound propagation to compute
+over-approximations of neuron pre- and post-activation values. If these bounds
+imply that no input consistent with π can satisfy the query, then π is infeasible
+and the node is declared UNSAT and its subtree is pruned. If a concrete input
+x ∈X consistent with π satisfies f(x) ∈Y, the node is declared SAT (e.g., the
+π = {r1, ¬r2} leaf in Figure 1), after which the search terminates and unexplored
+branches need not be visited.
+The search terminates when either a SAT leaf is found or all explored leaves
+are UNSAT. In the latter case, no violating input exists and the property is
+verified. This branch-and-bound paradigm underlies modern neural network
+verifiers [26,24,47,39,11,35].
+Bound Propagation. Bound propagation analyzes the feasibility of subprob-
+lems arising during branch-and-bound search (i.e., nodes in the search tree) by
+computing over-approximations of neuron values under a partial assignment
+π [31,44,38]. These bounds detect infeasible assignments and implied activation
+Incremental Neural Network Verification via Learned Conflicts
+5
+phases, enabling early pruning of the search tree (e.g., the UNSAT leaves in
+Figure 1).
+3
+Incremental Verification via Learned Conflicts
+3.1
+Conflicts and Query Refinement
+Learned Conflicts. During branch-and-bound verification, infeasible subproblems
+encountered along the search can be recorded and reused in the form of conflict
+clauses.
+Definition 1 (Conflict Clause). A conflict clause for a verification query
+q is a set of literals c = {ℓ1, . . . , ℓk} such that the corresponding CNF clause
+(¬ℓ1 ∨¬ℓ2 ∨· · · ∨¬ℓk) is logically implied by q.
+When a decision trail π = {ℓ1, . . . , ℓk} is found to be UNSAT, the infeasible
+combination can be summarized by the conflict clause (¬ℓ1 ∨· · · ∨¬ℓk).
+Query Refinement. To enable sound reuse of conflict clauses across verification
+queries, we formalize when one query is a refinement of another.
+Definition 2 (Query Refinement). A verification query q2 is a refinement
+of another query q1, denoted q2 ⪯q1, if both queries are defined over the same
+network f and
+X(q2) ⊆X(q1)
+and
+Y(q2) ⊆Y(q1).
+Intuitively, q2 imposes stricter constraints than q1, and therefore admits
+a smaller feasible region. In particular, any conjunction of constraints that is
+infeasible under q1 remains infeasible under q2. We formalize this monotonicity
+of infeasibility in Lemma 1.
+In practice, many verification workflows progressively strengthen the input
+domain while leaving the output constraints unchanged, as in the use cases
+considered below. Nevertheless, our framework supports refinements of both
+input and output domains.
+3.2
+Soundness of Conflict Reuse
+Lemma 1 (Monotonicity of Infeasibility Under Refinement). Let q1 and
+q2 be verification queries such that q2 ⪯q1, and let {ℓ1, . . . , ℓk} be a set of literals.
+If the subproblem
+q1 ∧ℓ1 ∧· · · ∧ℓk
+is infeasible, then the subproblem
+q2 ∧ℓ1 ∧· · · ∧ℓk
+is also infeasible.
+6
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+Lemma 1 formalizes the monotonicity of infeasibility under query refinement.
+The proof is provided in Appendix B.
+Theorem 1 (Sound Conflict Reuse under Refinement). Let q1 and q2 be
+verification queries such that q2 ⪯q1. Let c = {ℓ1, . . . , ℓk} be a conflict clause for
+q1. Then c is also a conflict clause for q2.
+Theorem 1 follows directly from Lemma 1 and establishes the soundness of conflict
+inheritance across refined queries. A detailed proof is given in Appendix B.
+As a result, conflicts learned for one query can be reused to prune infeasible
+regions in refined queries without re-exploration.
+3.3
+Using Conflicts during Verification
+Having established the soundness of conflict reuse under query refinement, we
+now describe how conflict clauses are used during verification to prune the search
+space. Specifically, we employ a SAT solver to reason about inherited conflict
+clauses during branch-and-bound search as an additional pruning and propagation
+step.
+Checking Consistency via SAT. At the start of each verification query, the verifier
+inherits a set of conflict clauses C learned from previous related queries. These
+clauses are encoded once as CNF clauses in a SAT solver.
+At each node of the branch-and-bound search tree, after standard bound
+propagation is applied, the verifier invokes the SAT solver to check the consistency
+of the current partial assignment with the inherited conflict clauses C. Let α
+denote the current partial assignment to ReLU phase variables. Each literal ℓ∈α
+is asserted as a unit assumption in the SAT solver.
+Soundness of SAT-Based Pruning. SAT-based reasoning under assumptions can
+yield two outcomes: either the current trail is UNSAT, certifying the subproblem
+as infeasible, or unit propagation derives implied assignments that further restrict
+the search space. An UNSAT result precludes any extension of the current partial
+assignment, while implied assignments enforce necessary literals without excluding
+feasible solutions.
+Lemma 2 (Soundness of SAT-Based Pruning). Let α be a partial assign-
+ment and C a set of conflict clauses implied by a verification query q. If the
+propositional CNF formula constructed from α and C is UNSAT, then no exten-
+sion of α can correspond to a feasible solution for q.
+Lemma 3 (Soundness of SAT-Based Implied Assignments). Let α be a
+partial assignment and C a set of conflict clauses implied by a verification query
+q. Let α′ be the assignment obtained by SAT-based reasoning over α and C, and
+let L = α′ \ α denote the implied assignments. Then any feasible solution for q
+extending α must satisfy all literals in L.
+Together, Lemmas 2 and 3 establish that SAT-based reasoning over inherited
+conflict clauses enables both sound pruning and sound propagation, reducing the
+search space while preserving correctness. Full proofs are provided in Appendix C.
+Incremental Neural Network Verification via Learned Conflicts
+7
+Algorithm 1: ICA: Incremental Conflict Analyser Component
+Fields:
+Pool: map id 7→set of conflicts Cid
+Sat: SAT solver instance
+Function BeginQuery(I)
+1
+Sat.Reset()
+// fresh SAT instance for this query
+2
+foreach id′ ∈I do
+3
+foreach c ∈Pool[id′] do
+4
+Sat.AddClauseAsCNF(c)
+Function Propagate(Bounds)
+5
+α ←ExtractPartialAssignment(Bounds)
+6
+res ←Sat.SolveUnderAssumptions(α)
+7
+if res = UNSAT then
+8
+return (UNSAT, ∅)
+9
+∆sat ←Sat.GetUnitImpliedLiterals()
+10
+Bounds.ApplyImpliedLiterals(∆sat)
+11
+return (SAT, Bounds)
+Function RecordConflict(id, c)
+12
+if ∃c′ ∈Pool[id] such that c′ ⊆c then
+13
+return
+14
+Pool[id] ←Pool[id] ∪{c}
+15
+Sat.AddClauseAsCNF(c)
+3.4
+Incremental Verification Workflow and Integration
+This subsection describes the end-to-end workflow by which incremental conflict
+reuse is integrated into branch-and-bound verification. At a high level, verification
+proceeds over a sequence of related queries, where conflicts learned during earlier
+runs are recorded and selectively inherited by subsequent queries. Algorithm 1
+presents the Incremental Conflict Analyser component that manages conflict
+storage and SAT-based reasoning, while Algorithm 2 shows how the component
+is invoked within the branch-and-bound search loop.
+Incremental Conflict Analyser. The core component enabling incremental conflict
+reuse is the Incremental Conflict Analyser (ICA), shown in Algorithm 1. The
+ICA is responsible for storing, retrieving, and applying learned conflict clauses
+across related verification queries.
+Each verification query q is issued together with an inheritance set I of query
+identifiers whose learned conflicts may be reused. The ICA maintains a global
+pool of conflict clauses indexed by query identifier, along with a SAT solver
+instance populated with the conflicts active for the current query.
+At the start of each verification, ICA.BeginQuery is invoked (Lines 1–4) to
+reset the SAT solver and load all conflict clauses associated with the identifiers
+8
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+Algorithm 2: Branch-and-Bound Verification with Incremental Conflict
+Reuse
+Input: Verification query q on network f;
+query identifier id; inherited identifier set I;
+Incremental Conflict Analyser object ICA.
+Output: SAT, UNSAT, or TIMEOUT.
+1 ICA.BeginQuery(I)
+2 π ←∅
+// Current decision trail
+3 Q ←stack containing π
+// DFS (or priority queue for best-first)
+4 while Q ̸= ∅do
+5
+π ←Q.Pop()
+6
+(status, Bounds) ←Propagate(q, π)
+// Standard bound propagation
+7
+if status = SAT then
+8
+return SAT
+// Counterexample found
+9
+if status = UNSAT then
+// Record conflict
+10
+c ←ExtractConflict(π)
+11
+ICA.RecordConflict(id, c)
+12
+continue
+13
+else
+// UNKNOWN
+// Incremental conflict reasoning
+14
+(icaStatus, Bounds) ←ICA.Propagate(Bounds)
+15
+if icaStatus = UNSAT then
+// Violates inherited conflict
+16
+continue
+17
+r ←ChooseSplit(Bounds)
+// Split on an undecided ReLU phase
+18
+Q.Push(π ∪{r})
+19
+Q.Push(π ∪{¬r})
+20 return UNSAT
+in I. During branch-and-bound search, ICA.Propagate performs SAT-based
+reasoning over the current subproblem by passing the current partial assignment
+over ReLU phase variables as assumptions to the SAT solver (Lines 5–11). If
+the SAT instance is UNSAT, this result is reported back to the verifier for
+pruning; otherwise, implied ReLU phase assignments are returned and applied
+as additional bounds. Finally, ICA.RecordConflict records newly discovered
+conflicts (Lines 12–15), making them available for reuse in subsequent refined
+queries.
+Branch-and-Bound with Incremental Reuse. Algorithm 2 presents a standard
+branch-and-bound verification procedure augmented with incremental conflict
+reuse; incremental extensions are highlighted in blue. At the start of verification,
+the Incremental Conflict Analyser is initialized for the current query by invoking
+ICA.BeginQuery(I) (Line 1), which activates the conflicts inherited from prior
+queries.
+Incremental Neural Network Verification via Learned Conflicts
+9
+The main search loop follows the standard branch-and-bound structure. For
+each decision trail π, numeric bound propagation is applied first (Line 6). If a
+concrete counterexample is found, the procedure terminates with SAT. If the
+subproblem is proven infeasible, a conflict is extracted from the current trail and
+recorded via ICA.RecordConflict, after which the branch is pruned.
+If numeric propagation is inconclusive, the verifier invokes incremental conflict
+reasoning by calling ICA.Propagate (Line 14). This step checks the current
+partial assignment against inherited conflict clauses. If the SAT solver reports
+UNSAT, the node is immediately pruned; otherwise, any implied ReLU phase
+assignments are applied as additional propagation step. The solver then selects
+an undecided ReLU phase and branches using the existing branching heuristic.
+The proposed incremental conflict reuse mechanism can be integrated into
+branch-and-bound verification as a lightweight, sound extension that preserves
+the solver’s core reasoning while reducing redundant exploration.
+4
+Incremental Verification Use Cases
+In this section, we consider three representative use cases of incremental verifica-
+tion and evaluate the effectiveness of the proposed conflict-reuse mechanism. For
+each use case, we explain how its structure gives rise to related queries, formally
+establish the refinement relations, and evaluate the effectiveness of incremental
+conflict reuse by comparing the performance of the incremental approach against
+a non-incremental baseline. Before describing the use cases, we first summarize our
+implementation as well as the evaluation metrics considered in our experiments.
+Implementation Details
+Our implementation integrates the Incremental Conflict Analyser into the Marabou
+verifier [26,40], using the CaDiCaL SAT solver [9] for conflict reasoning. All veri-
+fication queries induced by the same task share a single ICA instance.
+Propagation from Inherited Conflicts. Inherited conflict clauses influence veri-
+fication in two ways. SAT-based reasoning may detect that the current partial
+assignment is infeasible, allowing the verifier to prune the subproblem immediately,
+or it may derive additional ReLU phase assignments via unit propagation. These
+implied assignments introduce additional linear constraints that are integrated
+into the verifier’s existing numeric reasoning, further restricting the feasible region.
+To quantify the impact of conflict inheritance, we measure the total number
+of such effects—both pruned subproblems and implied assignments—over the
+course of a verification task.
+We now turn to the individual verification tasks considered in our evaluation.
+10
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+4.1
+Use Case 1: Determining the Local Robustness Radius
+In this common use case, the goal is to identify the largest neighborhood around
+a reference input within which a neural network’s output remains consistent.
+Given a reference input x0 and a task-specific notion of output consistency (e.g.,
+preservation of the predicted class or bounded deviation of the output), the goal
+is to determine tight lower and upper bounds on the maximal robustness radius,
+up to a specified precision.
+We formalize this task via local robustness verification queries and the associ-
+ated local robustness radius.
+Local robustness verification queries given ε. In the classification setting consid-
+ered here, a robustness query asks whether the predicted class changes within a
+bounded perturbation region around a reference input x0. Given a norm ∥· ∥p
+and a radius ε > 0, the network is not locally robust at x0 with respect to ε
+if there exists an input x within the ε-ball around x0 that violates the desired
+output property. Formally, let P(x0, x) denote a task-specific predicate capturing
+misclassification, the network is not locally robust if
+∃x ∈Rn such that ∥x −x0∥p ≤ε ∧P(x0, x).
+Definition 3 (Local Robustness Radius). Let f : Rn →Rm be a neural
+network and x0 ∈Rn a reference input. Let P(x0, x) denote a task-specific
+predicate expressing output inconsistency. The local robustness radius at x0 is
+defined as
+ε⋆= inf {ε ≥0 | ∃x ∈Rn, ∥x −x0∥≤ε ∧P(x0, x)} .
+The task is to compute certified bounds ε ≤ε⋆≤ε such that ε −ε ≤δ
+for a given precision δ > 0. The lower bound corresponds to a formally verified
+robustness guarantee (UNSAT), while the upper bound corresponds to a radius
+at which a violating input is found (SAT).
+Local robustness radius computation is a standard benchmark in neural
+network verification and provides a quantitative measure of model stability
+around a given input.
+A standard approach to this task repeatedly invokes a neural network verifier
+over a sequence of verification queries, typically using a binary-search style
+procedure over candidate perturbation radii. Each query examines a radius εi
+within a prescribed interval: an UNSAT result certifies robustness at εi and yields
+a new lower bound, while a SAT result produces a violating input and yields a
+new upper bound. The next candidate radius is selected accordingly, and the
+process continues until the remaining interval is within the desired precision or
+the computational budget is exhausted. A precise procedural description is given
+in Appendix E.1.
+This procedure induces a sequence of verification queries q1, q2, . . . , qk, all
+defined over the same network f and reference input x0. Each query qi corresponds
+to a perturbation radius εi ≥0 and checks the output predicate P(x0, x) for all
+Incremental Neural Network Verification via Learned Conflicts
+11
+inputs satisfying ∥x −x0∥≤εi. Across the sequence, the perturbation radius
+is the only varying component and determines the input constraint of the i-th
+query.
+Proposition 1 (Robustness Query Refinement). Let qi and qj be two ro-
+bustness verification queries with perturbation radii εi > εj, respectively. Then qj
+is a refinement of qi, denoted qj ⪯qi.
+Proposition 1 shows that robustness radius determination induces a refinement-
+ordered family of verification queries. The proof is provided in Appendix D.
+In the incremental robustness radius determination procedure, each verifica-
+tion query qi inherits conflicts learned from all previously issued queries qj with
+larger perturbation radii εj > εi. This allows later queries, which impose stricter
+input constraints, to reuse conflicts learned under looser constraints and prune
+infeasible regions early. Since the binary search explores radii in a non-monotonic
+order, conflicts are selectively inherited only from queries with εj > εi, which are
+guaranteed to be valid refinements by Proposition 1.
+Evaluation We evaluated the effectiveness of incremental conflict reuse for
+determining the local robustness radius. We compared our incremental approach
+against a non-incremental baseline on the MNIST dataset, using a fully connected
+neural network from the VNN-COMP benchmark [13,4]3. For each experiment,
+we computed the local robustness radius for 1000 inputs from the MNIST test
+set using a precision parameter δ = 0.001.
+Table 1 summarizes the results. The Time column reports the average total
+solving time per task (in seconds), Solved denotes the number of inputs for which
+the robustness radius was determined within the timeout, Propagations reports
+the average number of propagations induced by inherited conflicts per task, and
+Conflicts reports the average number of conflicts recorded per task. Overall,
+incremental verification with conflict reuse significantly outperforms the baseline.
+On average, the incremental method achieves a 1.3× speedup in per-task solving
+time, substantially reducing the total time required to determine robustness radii
+across test inputs.
+Method
+Time (s)
+Solved
+Propagations
+Conflicts
+Non-incremental
+315.6
+160
+–
+–
+Incremental
+233.5
+185
+8.2
+107.4
+Speedup
+1.35×
+–
+–
+–
+Table 1: Robustness radius evaluation on MNIST.
+3 https://github.com/VNN-COMP/vnncomp2021/blob/main/benchmarks/mnistfc/
+mnist-net_256x2.onnx
+12
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+Fig. 2: Incremental vs. non-incremental
+for robustness radius determination.
+Figure 2 presents a visual compar-
+ison of runtimes for incremental and
+non-incremental robustness radius de-
+termination. Each point corresponds to
+a single input instance. Most points lie
+below the y = x diagonal, with sev-
+eral non-incremental timeouts, indicat-
+ing better performance of the incremen-
+tal approach on harder instances.
+4.2
+Use Case 2: Verification with
+Input Splitting
+Input splitting is a common approach
+for verifying challenging properties, of-
+ten referred to as split-and-conquer or
+divide-and-conquer verification. Under input splitting, the input region is parti-
+tioned into multiple subregions, and each subregion is verified independently. As
+shown by Wu et al. [41], if the verifier is sound and complete and the subregions
+collectively cover the original input region, the overall verification result can be
+determined compositionally. That is, the property is SAT if at least one subregion
+is proven SAT, and UNSAT if all subregions are proven UNSAT.
+Input splitting is particularly important for scaling verification to difficult
+properties where the full input region is too large to verify at once. By recur-
+sively partitioning challenging regions into smaller subregions, verifiers can verify
+properties that would otherwise time out.
+With input splitting, each child query produced by splitting is a refinement
+of the parent query that was split. This follows because the input region of each
+child query is strictly contained within the input region of the parent query. The
+following proposition formalizes this observation.
+Proposition 2 (Input Splits are Refinements). Let qi be a verification
+query, and suppose qi+1, . . . , qi+n are generated by input splitting of qi. Then
+each qi+1, . . . , qi+n is a refinement of qi.
+Proposition 2 shows that input splitting induces refinement chains, enabling
+incremental verification across recursive partitioning. The proof is provided in
+Appendix D.
+The input-splitting incremental verification procedure leverages Proposition 2
+to enable incremental verification across a recursive partitioning of the input
+space. Given a verification query q with input region X, the verifier first attempts
+to verify q directly. If verification terminates with a conclusive result (SAT or
+UNSAT), that result is returned. If verification times out, the input region X is
+partitioned by splitting the largest interval dimension at its midpoint, producing
+two child queries qleft and qright.
+By Proposition 2, both child queries are refinements of the parent query
+q. Therefore, all conflict clauses learned during the attempted verification of q
+Incremental Neural Network Verification via Learned Conflicts
+13
+are retained and reused when verifying qleft and qright. Each child query is then
+verified recursively following the same procedure: if a child query times out, it is
+further split and inherits all conflict clauses from its ancestors. As input splitting
+progresses, the set of learned conflict clauses therefore monotonically increases.
+The procedure continues until all leaf subregions are resolved or a specified
+time limit is reached. If all leaf subregions verify as UNSAT, the original property is
+UNSAT. Dually, if any leaf subregion verifies as SAT, the original property is SAT.
+The pseudocode for the input-splitting workflow is provided in Appendix E.2.
+Evaluation To evaluate the effectiveness of incremental conflict reuse for input
+splitting, we applied our approach to a counterexample-guided inductive synthesis
+(CEGIS) loop for training Lyapunov neural certificates for deep reinforcement
+learning-controlled spacecraft, as introduced by Mandal et al. [28]. This framework
+iteratively learns a Lyapunov function that certifies reach-while-avoid proper-
+ties for a 4D spacecraft docking system. The CEGIS loop alternates between
+training the certificate to satisfy Lyapunov conditions and formally verifying
+these conditions using neural network verification. When verification identifies
+counterexamples that violate the Lyapunov conditions, the counterexamples are
+added to the training data and the certificate is retrained.
+We executed the complete CEGIS training procedure and extracted the 680
+verification queries generated during the process. Of these, 189 queries were
+solved without requiring input splitting and were excluded from the evaluation,
+as conflict reuse only affects verification once input splitting is performed. The
+remaining 491 queries form the basis of our evaluation. For these queries, we
+employed a progressive timeout strategy: the initial verification attempt was run
+with a 5-second timeout, and each subsequent input split increased the timeout
+by a factor of 1.5 (i.e., 7.5 seconds after the first split, 11.25 seconds after the
+second, and so on). A global timeout of 1200 seconds was imposed to prevent
+indefinite splitting.
+Table 2 summarizes the performance of the incremental and non-incremental
+methods. The Time column reports the average verification time per verification
+task in seconds. Solved denotes the number of verification tasks completed within
+the global timeout. Propagations reports the average number of propagations
+induced per verification task, and Conflicts reports the average number of conflict
+clauses recorded during verification.
+Method
+Time (s)
+Solved
+Propagations
+Conflicts
+Non-incremental
+84.1
+489
+–
+–
+Incremental
+43.9
+491
+1.7
+7.9
+Speedup
+1.92×
+–
+–
+–
+Table 2: Evaluation of iterative input splitting for Lyapunov certificate verification.
+14
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+Overall, the incremental method significantly outperforms the non-incremental
+baseline. It successfully solves all 491 verification tasks, whereas the baseline
+times out on two tasks, and achieves an average speedup of 1.92×. On average,
+each verification attempt involved 7.9 recorded conflict clauses, which induced
+1.7 propagations per attempt.
+Fig. 3:
+Incremental
+vs.
+non-
+incremental for input splitting.
+Figure 3 presents a visual comparison
+of runtimes for both methods on a loga-
+rithmic scale. Each point corresponds to a
+single verification query. Most points lie be-
+low the equal-performance line, indicating
+that incremental verification outperforms
+the non-incremental baseline on the ma-
+jority of queries.
+4.3
+Use Case 3: Minimal Sufficient
+Feature Set Extraction
+Minimal sufficient feature set extraction
+addresses the problem of explaining a neu-
+ral network’s prediction by identifying a
+smallest subset of input features whose
+values alone suffice to determine the output [43,42,8,29,12].
+Given a reference input and its predicted class, the goal is to identify a subset
+of input indices such that fixing these features to their reference values guarantees
+preservation of the predicted class, regardless of how the remaining features vary.
+While this notion naturally extends to regression settings via a tolerance on the
+output, we focus here on classification for clarity.
+Formally, we seek a feature subset that is sufficient for preserving the prediction
+and minimal with respect to set inclusion, subject to a given time budget. In this
+work, unfixed features are allowed to vary freely over their entire domain.
+Definition 4 (Minimal Sufficient Feature Set). Let f : Rn →Rm be a
+neural network, x0 ∈Rn a reference input, and c = arg maxj fj(x0) the predicted
+class at x0. For a subset of feature indices S ⊆{1, . . . , n}, define
+XS = {x ∈Rn | xi = (x0)i for all i ∈S} .
+The set S is a sufficient feature set if
+∀x ∈XS,
+arg max
+j
+fj(x) = c.
+It is minimal if no strict subset S′ ⊂S is sufficient.
+Minimal sufficient feature sets reveal which input features are essential for a
+given prediction and form a central primitive in formal explainability.
+A common approach to solving this task is to search over subsets of in-
+put features while invoking a neural network verifier as a subroutine. The
+procedure begins with all features fixed to their values in the reference input
+Incremental Neural Network Verification via Learned Conflicts
+15
+Fig. 4: Minimal sufficient feature
+set visualizations for GTSRB in-
+puts. Pixels not included in the
+explanation are shown in gray.
+and progressively frees features to test
+whether preservation of the predicted class is
+maintained. At a high level, the procedure al-
+ternates between proposing candidate feature
+sets to free and using verification outcomes
+to determine whether these features can be
+freed or must remain fixed. This process fol-
+lows an anytime paradigm: if interrupted due
+to a timeout, it returns the smallest sufficient
+feature set identified so far.
+To explore the space of feature subsets
+efficiently, an importance ordering over fea-
+tures is typically computed in a preprocessing
+step and used to guide a binary-search-style
+exploration. Rather than freeing features in-
+dividually, the procedure considers groups of
+features—often starting from the least im-
+portant ones—and recursively refines them.
+Candidate sets are tentatively freed and checked for sufficiency; depending on
+the outcome, features are either permanently freed or selectively reinstated.
+A precise procedural description of this workflow, including the technical
+modifications required to support incremental verification and the binary-search
+strategies employed, is provided in Appendix E.3.
+Under this formulation, the task gives rise to a collection of verification queries,
+all defined over the same neural network f and reference input x0. Each query q
+is parameterized by a candidate set of freed features S, inducing the fixed feature
+set S = {1, . . . , n}\S and the corresponding constrained input set XS. The query
+asks whether fixing all features in S to their values in x0 is sufficient to preserve
+the predicted class c. A query returning UNSAT certifies that S is sufficient and
+that all features in S can be freed. In contrast, a SAT result indicates that S is
+insufficient and that additional features must be fixed. For soundness, TIMEOUT
+outcomes are treated as SAT.
+All queries share the same network f, reference input x0, and target class
+c; the only varying component is the set of fixed features. As a result, minimal
+sufficient feature set extraction induces a family of closely related verification
+queries whose input constraints differ only in which features are fixed.
+Due to the binary-search-style exploration, the verification queries generated
+during minimal sufficient feature set extraction are naturally organized as a search
+tree rather than a linear sequence. Queries generated after a SAT or TIMEOUT
+outcome impose strictly stronger input constraints by fixing additional features.
+In contrast, queries generated after a UNSAT outcome test disjoint sets of features
+and are therefore incomparable under refinement. Consequently, the overall query
+family is not totally ordered by refinement.
+We formalize the refinement relationship that arises along SAT and TIMEOUT
+branches of the search tree below.
+16
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+Proposition 3 (Feature-Set Query Refinement). Let q and q′ be two verifi-
+cation queries generated during the feature set extraction procedure, corresponding
+to fixed feature sets S and S′, respectively. If q′ is generated from q following a
+SAT or TIMEOUT outcome, then S ⊂S′ and q′ is a refinement of q, denoted
+q′ ⪯q.
+Proposition 3 shows that, although the full set of queries is not totally ordered,
+all queries along SAT and TIMEOUT branches form refinement chains. The proof
+is provided in Appendix D.
+Accordingly, in the incremental minimal sufficient feature set extraction
+procedure, each query q′ generated after a SAT or TIMEOUT outcome inherits
+all conflicts learned from its ancestor queries along the same search-tree branch.
+Evaluation We evaluated the effectiveness of incremental conflict reuse for
+accelerating minimal sufficient feature set extraction on the German Traffic Sign
+Recognition Benchmark (GTSRB) dataset [32], using a convolutional neural
+network model from Wu et al. [42]. Out of the 1000 test inputs considered, 70
+triggered conflicts during SAT or TIMEOUT verification outcomes; the remaining
+inputs were resolved without conflicts and therefore could not benefit from conflict
+reuse. We restrict our evaluation to these 70 cases.
+For each input, we ran an anytime minimal sufficient feature set extraction
+procedure and compared our incremental approach against a non-incremental
+baseline. Table 3 summarizes the results. The Explanation Size column reports
+the average size of the minimal sufficient feature set returned within the time
+budget. Propagations reports the average number of propagations induced by
+inherited conflicts per task, and Conflicts reports the average number of conflict
+clauses recorded per task. Both approaches achieve comparable explanation sizes,
+with the incremental method yielding slightly smaller explanations on average.
+On average, the incremental approach records 92 conflicts per task, which induce
+approximately 2 effective propagations per task.
+Method
+Explanation Size
+Propagations
+Conflicts
+Non-incremental
+848.52
+–
+–
+Incremental
+844.21
+2.30
+92.14
+Table 3: Minimal sufficient feature set extraction on GTSRB.
+The primary benefit of incremental verification in this setting lies in its
+anytime behavior. As shown in Figure 5, incremental verification progressively
+outperforms the non-incremental baseline in reducing explanation size over time.
+During the initial phase (up to approximately 20 seconds), both methods exhibit
+similar performance, with the non-incremental approach sometimes slightly ahead,
+reflecting the overhead incurred while recording conflicts early in the search.
+Incremental Neural Network Verification via Learned Conflicts
+17
+0
+20
+40
+60
+80
+100
+120
+Time (s)
+840
+860
+880
+900
+920
+Explanation size
+Explanation size vs time
+incremental (mean)
+normal (mean)
+Fig. 5: Incremental vs. non-incremental ex-
+planation size over time.
+Beyond this point, incremen-
+tal verification tends to achieve
+smaller explanations more quickly
+by reusing previously learned con-
+flicts accumulated earlier in the
+search. This reuse supports earlier
+identification of critical features
+and more efficient pruning of in-
+feasible feature combinations, lead-
+ing to improved anytime behavior.
+Overall, these observations suggest
+that conflict reuse can be benefi-
+cial for explainability tasks under
+an anytime verification regime.
+4.4
+Results Discussion
+We evaluated incremental conflict reuse on three verification tasks: robustness
+radius determination, input splitting, and minimal sufficient feature set extraction.
+In robustness radius determination, queries form a refinement chain, allowing
+conflicts learned at larger radii to be reused in subsequent queries. This yields
+a 26% reduction in average verification time compared to the non-incremental
+baseline (from 315.6 to 233.5 seconds), corresponding to a 1.35× speedup. In input
+splitting, queries form refinement chains along recursive split branches, allowing
+conflicts learned in parent subproblems to be reused consistently in descendant
+queries. This yields a 47% reduction in average verification time compared to
+the non-incremental baseline (from 84.1 to 43.9 seconds), corresponding to a
+1.92× speedup. For minimal sufficient feature set extraction, conflict reuse occurs
+along refinement chains induced by SAT and TIMEOUT outcomes. While final
+explanation size improvement is small, incremental reuse improves anytime
+behavior by reducing explanation size more quickly.
+Overall, the impact of incremental conflict reuse is closely tied to the refinement
+structure of the query family: stronger refinement relations enable greater reuse
+and larger performance gains.
+5
+Related Work
+Incremental SAT and SMT solving address scalability by reusing learned infor-
+mation, such as conflict clauses and theory lemmas, across sequences of related
+problem instances [16,6,14]. When successive instances are structurally similar,
+this can avoid redundant reasoning and improve performance. But, the effective-
+ness of incremental techniques is strongly problem-dependent, and worst-case
+results in areas such as dynamic graph algorithms show that substantial recom-
+putation may be unavoidable under general updates [21]. Despite the maturity
+18
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+of incremental SAT/SMT solving, its systematic application to neural network
+verification remains limited.
+Prior work on incremental neural network verification has largely focused on
+settings in which the network itself changes across queries. Residual reasoning [17]
+reuses information learned for abstract networks to accelerate verification after
+refinement, while IVAN and I-IVAN [34,36] reuse successful case splits heuristically
+across related network architectures. More recently, Zhang et al. [45] study
+incremental verification guided by counterexample potentiality, again in scenarios
+where the network is modified.
+Related ideas have been explored in abstract interpretation. FANC [37]
+employs heuristic transfer of abstract bounds to certify multiple approximate
+neural networks, whereas we reuse conflict information across verification queries
+on a fixed network.
+In contrast, we consider iterative verification over a fixed neural network,
+where properties or input constraints vary across queries. Our approach reuses
+learned conflict clauses and provides conditions under which they can be trans-
+ferred soundly between related verification queries, aligning with conflict-based
+incremental SAT/SMT solving applied to a single network.
+In our evaluation, we instantiated our approach with the CaDiCaL SAT
+solver [9] and the Marabou verifier [26,40] as backends. CaDiCaL is a modern
+SAT solver with a clean design that facilitates its integration with other tools.
+Marabou is a proof-producing DNN analysis framework [22], which has been
+used for a myriad of applications, including network pruning [27], formal explain-
+ability [7], verifying network generalization [1], and network ensembles [2]. While
+our implementation relies on Marabou and CaDiCaL, the proposed technique is
+solver-agnostic and can, in principle, be integrated with other SAT solvers and
+branch-and-bound verifiers.
+6
+Limitations and Future Work
+The current implementation records conflicts without requiring minimality. As a
+result, a conflict may include ReLU phase decisions that are not strictly necessary
+to establish infeasibility. While smaller or subsumed conflicts could improve reuse
+effectiveness and reduce the overhead of SAT-based reasoning, computing minimal
+conflicts would require additional analysis and is left for future work [23,48,46].
+More generally, the approach focuses on reusing conflicts derived from in-
+feasible subproblems. Other reusable information, such as richer theory-specific
+lemmas or abstractions, may further improve performance in some settings. Ex-
+ploring such mechanisms would require careful consideration of both soundness
+and solver integration.
+Finally, learned conflicts are used solely for pruning and propagation. An
+additional direction is to exploit conflicts to guide branching decisions, for example
+by prioritizing frequently occurring case splits.
+Incremental Neural Network Verification via Learned Conflicts
+19
+7
+Conclusion
+We introduced an incremental verification approach for neural networks that
+reuses learned conflict clauses across related verification queries over a fixed
+network. By formalizing a refinement relation between queries, we showed when
+such conflicts can be reused soundly and integrated this mechanism into the
+Marabou verifier as a lightweight extension to branch-and-bound search. Our
+evaluation shows that conflict reuse reduces redundant exploration and yields
+speedups of up to 1.9× on representative iterative verification tasks, while
+preserving soundness.
+Acknowledgments
+Raya Elsaleh is supported by the Ariane de Rothschild Women Doctoral Program.
+The work of Elsaleh and Katz was partially funded by a grant from the Israeli
+Science Foundation (grant number 558/24), and by the European Union (ERC,
+VeriDeL, 101112713). Views and opinions expressed are however those of the
+author(s) only and do not necessarily reflect those of the European Union or the
+European Research Council Executive Agency. Neither the European Union nor
+the granting authority can be held responsible for them.
+References
+1. G. Amir, O. Maayan, T. Zelazny, G. Katz, and M. Schapira. Verifying Generalization
+in Deep Learning. In Proc. 35th Int. Conf. on Computer Aided Verification (CAV),
+pages 438–455, 2023.
+2. G. Amir, T. Zelazny, G. Katz, and M. Schapira. Verification-Aided Deep Ensemble
+Selection. In Proc. 22nd Int. Conf. on Formal Methods in Computer-Aided Design
+(FMCAD), pages 27–37, 2022.
+3. D. Amodei, C. Olah, J. Steinhardt, P. F. Christiano, J. Schulman, and D. Man´e.
+Concrete Problems in AI Safety, 2016. Technical Report. http://arxiv.org/abs/
+1606.06565.
+4. S. Bak, C. Liu, and T. Johnson. The Second International Verification of Neural
+Networks Competition (VNN-COMP 2021): Summary and Results, 2021. Technical
+Report. http://arxiv.org/abs/2109.00498.
+5. S. Bak, H.-D. Tran, K. Hobbs, and T. T. Johnson. Improved Geometric Path
+Enumeration for Verifying ReLU Neural Networks. In Proc. 32nd Int. Conf. on
+Computer Aided Verification (CAV), pages 66–96, 2020.
+6. C. Barrett and C. Tinelli. Satisfiability Modulo Theories. In E. M. Clarke, T. A.
+Henzinger, H. Veith, and R. Bloem, editors, Handbook of Model Checking, pages
+305–343. Springer, 2018.
+7. S. Bassan, G. Amir, D. Corsi, I. Refaeli, and G. Katz. Formally Explaining Neural
+Networks within Reactive Systems. In Proc. 23rd Int. Conf. on Formal Methods in
+Computer-Aided Design (FMCAD), pages 10–22, 2023.
+8. S. Bassan and G. Katz. Towards Formal XAI: Formally Approximate Minimal
+Explanations of Neural Networks. In Proc. 29th Int. Conf. on Tools and Algorithms
+for the Construction and Analysis of Systems (TACAS), pages 187–207, 2023.
+20
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+9. A. Biere, T. Faller, K. Fazekas, M. Fleury, N. Froleyks, and F. Pollitt. CaDiCaL 2.0.
+In Proc. 36th Int. Conf. on Computer Aided Verification (CAV), pages 133–152,
+2024.
+10. M. Bojarski, D. W. del Testa, D. Dworakowski, B. Firner, B. Flepp, P. Goyal, L. D.
+Jackel, M. Monfort, U. Muller, J. Zhang, X. Zhang, J. Zhao, and K. Zieba. End to
+End Learning for Self-Driving Cars, 2016. Technical Report. http://arxiv.org/
+abs/1604.07316.
+11. E. Botoeva, P. Kouvaros, J. Kronqvist, A. Lomuscio, and R. Misener. Efficient
+Verification of ReLU-Based Neural Networks via Dependency Analysis. In Proc.
+34th AAAI Conf. on Artificial Intelligence (AAAI), pages 3291–3299, 2020.
+12. R. Boumazouza, R. Elsaleh, M. Ducoffe, S. Bassan, and G. Katz. FAME: Formal
+Abstract Minimal Explanation for neural networks. In Proc. 14th Int. Conf. on
+Learning Representations (ICLR), 2026.
+13. C. Brix, M. N. M¨uller, S. Bak, T. T. Johnson, and C. Liu. First Three Years
+of the International Verification of Neural Networks Competition (VNN-COMP).
+International Journal on Software Tools for Technology Transfer (STTT), 25(3):329–
+339, 2023.
+14. L. de Moura and N. Bjørner. Z3: An Efficient SMT Solver. In Proc. 14th Int. Conf.
+on Tools and Algorithms for the Construction and Analysis of Systems (TACAS),
+pages 337–340, 2008.
+15. H. Duong, T. Nguyen, and M. B. Dwyer. NeuralSAT: A High-Performance Ver-
+ification Tool for Deep Neural Networks. In Proc. 37th Int. Conf. on Computer
+Aided Verification (CAV), pages 409–423, 2025.
+16. N. E´en and N. S¨orensson. An Extensible SAT-Solver. In Proc. 7th Int. Conf. on
+Theory and Applications of Satisfiability Testing (SAT), pages 502–518, 2004.
+17. Y. Y. Elboher, E. Cohen, and G. Katz. Neural Network Verification Using Residual
+Reasoning. In Proc. 20th Int. Conf. on Software Engineering and Formal Methods
+(SEFM), pages 173–189, 2022.
+18. Y. Y. Elboher, R. Elsaleh, O. Isac, M. Ducoffe, A. Galametz, G. Pov´eda, R. Bouma-
+zouza, N. Cohen, and G. Katz.
+Robustness Assessment of a Runway Object
+Classifier for Safe Aircraft Taxiing. In Proc. 43rd IEEE/ACM Digital Avionics
+Systems Conf. (DASC), pages 1–6, 2024.
+19. A. Esteva, B. Kuprel, R. A. Novoa, J. Ko, S. M. Swetter, H. M. Blau, and S. Thrun.
+Dermatologist-Level Classification of Skin Cancer with Deep Neural Networks.
+Nature, 542(7639):115–118, 2017.
+20. I. Goodfellow, Y. Bengio, and A. Courville. Deep Learning. MIT Press, 2016.
+21. J. Holm, K. de Lichtenberg, and M. Thorup. Poly-Logarithmic Deterministic
+Fully-Dynamic Algorithms for Connectivity, Minimum Spanning Tree, 2-Edge, and
+Biconnectivity. Journal of the ACM (JACM), 48(4):723–760, 2001.
+22. O. Isac, C. Barrett, M. Zhang, and G. Katz. Neural Network Verification with
+Proof Production. In Proc. 22nd Int. Conf. on Formal Methods in Computer-Aided
+Design (FMCAD), pages 38–48, 2022.
+23. O. Isac, I. Refaeli, H. Wu, C. Barrett, and G. Katz. Proof Minimization in Neural
+Network Verification. In Proc. 27th Int. Conf. on Verification, Model Checking,
+and Abstract Interpretation (VMCAI), pages 99–124, 2026.
+24. G. Katz, C. Barrett, D. Dill, K. Julian, and M. Kochenderfer.
+Reluplex: An
+Efficient SMT Solver for Verifying Deep Neural Networks. In Proc. 29th Int. Conf.
+on Computer Aided Verification (CAV), pages 97–117, 2017.
+25. G. Katz, C. Barrett, D. Dill, K. Julian, and M. Kochenderfer. Towards Proving
+the Adversarial Robustness of Deep Neural Networks. In Proc. 1st Workshop on
+Formal Verification of Autonomous Vehicles (FVAV), pages 19–26, 2017.
+Incremental Neural Network Verification via Learned Conflicts
+21
+26. G. Katz, D. Huang, D. Ibeling, K. Julian, C. Lazarus, R. Lim, P. Shah, S. Thakoor,
+H. Wu, A. Zelji´c, D. Dill, M. Kochenderfer, and C. Barrett. The Marabou Framework
+for Verification and Analysis of Deep Neural Networks. In Proc. 31st Int. Conf. on
+Computer Aided Verification (CAV), pages 443–452, 2019.
+27. O. Lahav and G. Katz. Pruning and Slicing Neural Networks using Formal Veri-
+fication. In Proc. 21st Int. Conf. on Formal Methods in Computer-Aided Design
+(FMCAD), pages 183–192, 2021.
+28. U. Mandal, G. Amir, H. Wu, I. Daukantas, F. L. Newell, U. Ravaioli, B. Meng,
+M. Durling, M. Ganai, T. Shim, G. Katz, and C. Barrett. Formally Verifying Deep
+Reinforcement Learning Controllers with Lyapunov Barrier Certificates. In Proc.
+24th Int. Conf. on Formal Methods in Computer-Aided Design (FMCAD), pages
+95–106, 2024.
+29. J. Marques-Silva and A. Ignatiev. Delivering Trustworthy AI through Formal XAI.
+In Proc. 36th AAAI Conf. on Artificial Intelligence (AAAI), pages 12342–12350,
+2022.
+30. C. P˘as˘areanu, D. Gopinath, and H. Yu. Compositional Verification for Autonomous
+Systems with Deep Learning Components. In H. Yu, X. Li, R. M. Murray, S. Ramesh,
+and C. J. Tomlin, editors, Safe, Autonomous and Intelligent Vehicles, pages 187–197.
+Springer, 2019.
+31. G. Singh, T. Gehr, M. P¨uschel, and M. Vechev. An Abstract Domain for Certifying
+Neural Networks. In Proc. 46th ACM SIGPLAN Symposium on Principles of
+Programming Languages (POPL), 2019.
+32. J. Stallkamp, M. Schlipsing, J. Salmen, and C. Igel. The German Traffic Sign
+Recognition Benchmark: A Multi-Class Classification Competition. In Proc. IEEE
+Int. Joint Conf. on Neural Networks (IJCNN), pages 1453–1460, 2011.
+33. C. Strong, H. Wu, A. Zelji´c, K. Julian, G. Katz, C. Barrett, and M. Kochender-
+fer. Global Optimization of Objective Functions Represented by ReLU Networks.
+Machine Learning, 112(10):3685–3712, 2023.
+34. X. Tang. Improved Incremental Verification for Neural Networks. In Proc. 18th
+Int. Conf. on Theoretical Aspects of Software Engineering (TASE), pages 392–409,
+2024.
+35. H. Tran, X. Yang, D. Manzanas Lopez, P. Musau, L. Nguyen, W. Xiang, S. Bak,
+and T. Johnson. NNV: The Neural Network Verification Tool for Deep Neural
+Networks and Learning-Enabled Cyber-Physical Systems. In Proc. 32nd Int. Conf.
+on Computer Aided Verification (CAV), pages 3–17, 2020.
+36. S. Ugare, D. Banerjee, S. Misailovic, and G. Singh. Incremental Verification of
+Neural Networks. In Proc. 44th ACM SIGPLAN Conf. on Programming Language
+Design and Implementation (PLDI), 2023.
+37. S. Ugare, G. Singh, and S. Misailovic. Proof Transfer for Fast Certification of
+Multiple Approximate Neural Networks. In Proc. 37th ACM SIGPLAN Conf. on
+Object-Oriented Programming, Systems, Languages, and Applications (OOPSLA),
+2022.
+38. S. Wang, K. Pei, J. Whitehouse, J. Yang, and S. Jana. Formal Security Analysis
+of Neural Networks Using Symbolic Intervals. In Proc. 27th USENIX Security
+Symposium (USENIX Security), pages 1599–1614, 2018.
+39. S. Wang, H. Zhang, K. Xu, X. Lin, S. Jana, C.-J. Hsieh, and J. Kolter. Beta-
+CROWN: Efficient Bound Propagation with Per-Neuron Split Constraints for
+Complete and Incomplete Neural Network Verification. In Proc. 35th Conf. on
+Neural Information Processing Systems (NeurIPS), 2021.
+22
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+40. H. Wu, O. Isac, A. Zelji´c, T. Tagomori, M. Daggitt, W. Kokke, I. Refaeli, G. Amir,
+K. Julian, S. Bassan, P. Huang, O. Lahav, M. Wu, M. Zhang, E. Komendantskaya,
+G. Katz, and C. Barrett. Marabou 2.0: A Versatile Formal Analyzer of Neural
+Networks. In Proc. 36th Int. Conf. on Computer Aided Verification (CAV), pages
+249–264, 2024.
+41. H. Wu, A. Ozdemir, A. Zelji´c, K. Julian, A. Irfan, D. Gopinath, S. Fouladi, G. Katz,
+and C. Pasareanu. Parallelization Techniques for Verifying Neural Networks. In
+Proc. 20th Int. Conf. on Formal Methods in Computer-Aided Design (FMCAD),
+pages 128–137, 2020.
+42. M. Wu, X. Li, H. Wu, and C. Barrett. Efficiently Computing Compact Formal
+Explanations, 2025. Technical Report. http://arxiv.org/abs/2409.03060.
+43. M. Wu, H. Wu, and C. Barrett. VeriX: Towards Verified Explainability of Deep
+Neural Networks. In Proc. 37th Conf. on Neural Information Processing Systems
+(NeurIPS), pages 22247–22268, 2023.
+44. K. Xu, Z. Shi, H. Zhang, Y. Wang, K.-W. Chang, M. Huang, B. Kailkhura, X. Lin,
+and C.-J. Hsieh. Automatic Perturbation Analysis for Scalable Certified Robustness
+and Beyond.
+In Proc. 34th Conf. on Neural Information Processing Systems
+(NeurIPS), 2020.
+45. G. Zhang, Z. Zhang, H. Bandara, S. Chen, J. Zhao, and Y. Sui. Efficient Incremental
+Verification of Neural Networks Guided by Counterexample Potentiality. In Proc.
+40th ACM SIGPLAN Conf. on Object-Oriented Programming, Systems, Languages,
+and Applications (OOPSLA), 2025.
+46. H. Zhang, S. Wang, K. Xu, L. Li, B. Li, S. Jana, C.-J. Hsieh, and J. Kolter. General
+Cutting Planes for Bound-Propagation-Based Neural Network Verification. In Proc.
+36th Conf. on Neural Information Processing Systems (NeurIPS), 2022.
+47. H. Zhang, T.-W. Weng, P.-Y. Chen, C.-J. Hsieh, and L. Daniel. Efficient Neural
+Network Robustness Certification with General Activation Functions. In Proc.
+32nd Conf. on Neural Information Processing Systems (NeurIPS), pages 4939–4948,
+2018.
+48. D. Zhou, C. Brix, G. A. Hanasusanto, and H. Zhang. Scalable Neural Network
+Verification with Branch-and-Bound Inferred Cutting Planes. In Proc. 38th Conf.
+on Neural Information Processing Systems (NeurIPS), 2024.
+Incremental Neural Network Verification via Learned Conflicts
+23
+Appendix
+A
+Additional Implementation Details
+Push-Pop of Input and Output Constraints. To improve efficiency, we
+introduce a push-pop mechanism for managing input and output constraints
+in Marabou. This mechanism enables reuse of the encoded neural network and
+constraints across verification queries by allowing constraints to be incrementally
+added and removed without re-encoding the network, the constraints, or re-
+initializing the solver. Using push, the verifier can lock a set of constraints and
+incrementally add additional ones; a subsequent pop restores the solver state to
+the previous configuration.
+B
+Soundness of Conflict Reuse
+This appendix contains the proofs of Lemma 1 and Theorem 1 from Section 3.
+B.1
+Proof of Lemma 1
+Proof. Assume for contradiction that q2 ∧ℓ1 ∧· · · ∧ℓk is feasible, and let x be a
+satisfying input. Since q2 ⪯q1, both queries are defined over the same network f,
+X(q2) ⊆X(q1), and the ReLU phase literals ℓ1, . . . , ℓk refer to the same ReLU
+constraints in both queries. Therefore, the same input x satisfies q1 ∧ℓ1 ∧· · · ∧ℓk,
+contradicting infeasibility.
+⊓⊔
+B.2
+Proof of Theorem 1
+Proof. Let c = {ℓ1, . . . , ℓk} be a conflict clause for q1. By Definition 1, the
+subproblem q1 ∧ℓ1 ∧· · · ∧ℓk is infeasible. Since q2 ⪯q1, infeasibility is monotone
+under refinement by Lemma 1. Therefore, the subproblem q2 ∧ℓ1 ∧· · · ∧ℓk is
+also infeasible, and hence c is a conflict clause for q2.
+⊓⊔
+C
+Soundness of SAT-Based Conflict Reasoning
+This appendix provides proofs for Lemmas 2 and 3, which establish the soundness
+of SAT-based pruning and propagation using learned conflict clauses.
+C.1
+Proof of Lemma 2
+Proof. Suppose, for contradiction, that there exists a feasible solution for query q
+that extends the partial assignment α. Then there exists a complete assignment
+that satisfies all literals in α and corresponds to a feasible input for q.
+Since the propositional CNF formula constructed from α and the clauses in
+C is UNSAT, every complete assignment extending α must violate at least one
+24
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+conflict clause c ∈C. By Definition 1, each conflict clause forbids the simultaneous
+satisfaction of all its literals, and any assignment violating c cannot correspond to
+a feasible solution for q. This contradicts the assumption of feasibility. Therefore,
+no extension of α can correspond to a feasible solution for q.
+⊓⊔
+C.2
+Proof of Lemma 3
+Proof. Let L be the set of literals implied by unit propagation when solving the
+SAT instance under assumptions α. By definition of unit propagation, for each
+ℓ∈L, assigning ¬ℓunder α would falsify at least one conflict clause c ∈C.
+Suppose, for contradiction, that there exists a feasible solution for q that
+extends α but violates some implied literal ℓ∈L. Then the corresponding
+complete assignment satisfies α ∪{¬ℓ} and therefore violates the conflict clause
+c. By Definition 1, this assignment cannot correspond to a feasible solution for q,
+contradicting feasibility.
+Hence, every feasible extension of α must satisfy all literals in L.
+⊓⊔
+D
+Proofs of Refinement Properties of Verification Use
+Cases
+This appendix provides proofs of the refinement properties for the verification
+use cases discussed in Section 4.
+D.1
+Proof of Proposition 1
+Proof. The two queries are defined over the same network f and reference input
+x0. The input constraints of the two queries are given by
+X(qi) = {x ∈Rn | ∥x −x0∥≤εi} ,
+X(qj) = {x ∈Rn | ∥x −x0∥≤εj} .
+Since εj < εi, it follows immediately that X(qj) ⊆X(qi). The output constraints
+of both queries are identical, as they are defined by the same predicate P(x0, x).
+Therefore, by Definition 2, qj is a refinement of qi.
+⊓⊔
+D.2
+Proof of Proposition 2
+Proof. Let q0 be a verification query, and let q1 be a verification query generated
+by input splitting of q0. By construction, input splitting partitions the input
+domain of q0 into subregions, and thus the input domain of q1 is a subset of that
+of q0, i.e., X(q1) ⊆X(q0). Moreover, input splitting does not modify the network
+or the output constraints. Hence, Y(q1) = Y(q0), and in particular Y(q1) ⊆Y(q0).
+Therefore, by Definition 2, q1 is a refinement of q0.
+⊓⊔
+Incremental Neural Network Verification via Learned Conflicts
+25
+D.3
+Proof of Proposition 3
+Proof. By construction, a successor query q′ generated after a SAT or TIMEOUT
+outcome is obtained by reinstating a subset of previously freed features. Thus,
+the corresponding fixed feature sets satisfy S ⊂S′.
+The input constraints of the two queries are given by
+XS = {x ∈Rn | xi = (x0)i for all i ∈S} ,
+XS′ = {x ∈Rn | xi = (x0)i for all i ∈S′} .
+Since S ⊂S′, it follows that XS′ ⊆XS.
+Both queries enforce the same output constraint, namely preservation of the
+predicted class c. Therefore, by Definition 2, q′ is a refinement of q.
+⊓⊔
+E
+Algorithmic Details and Pseudocodes
+E.1
+Robustness Radius Interval Computation
+This appendix provides pseudocode and a description of the robustness radius
+interval computation used in Section 4.1. We present the algorithmic workflow
+by which lower and upper bounds on the local robustness radius are iteratively
+refined through repeated verification queries until the desired precision is achieved
+or the time budget is exhausted. In addition, we highlight the modifications
+required to enable incremental reuse of learned conflicts across related verification
+queries.
+Given a neural network f : Rn →Rm, a reference input x0 ∈Rn, and an
+output consistency predicate P(x0, x), the objective is to compute certified lower
+and upper bounds ε and ε on the local robustness radius ε⋆at x0, up to a
+prescribed precision δ > 0 and within a time budget T.
+The procedure is presented in Algorithm 3. It relies on a verification sub-
+routine Verify(...) that, given a perturbation radius ε and the reference input
+x0, determines whether the property P(x0, x) holds for all inputs x satisfy-
+ing ∥x −x0∥∞≤ε. In other words, it returns one of three possible outcomes:
+UNSAT, SAT, or TIMEOUT. In non-incremental mode, the call takes only the
+parameters ε and x0 as input: Verify(ε, x0). In incremental mode, the call
+Verify(ε, x0, id, I) additionally takes a unique query identifier id and a set of
+inherited query identifiers I, enabling reuse of learned conflicts. The elements
+related to incremental reuse are highlighted in blue in the algorithm.
+The algorithm assumes the initial bracketing interval [εmin, εmax] is valid
+(i.e. Verify(εmin, x0) returns UNSAT, and Verify(εmax, x0) returns SAT). After
+initializing the time budget and bounds (Lines 2–3), the procedure iteratively
+refines the current interval [ε, ε] within a main loop (Line 6).
+In each iteration, a candidate perturbation radius ε is selected from the
+current interval and issued as a verification query. In incremental mode, the query
+is assigned a fresh identifier and augmented with a set of inherited identifiers cor-
+responding to earlier queries at larger radii (Line 14). The verification subroutine
+is then invoked (Line 15).
+26
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+The outcome of the verification determines how the interval is updated. If
+the result is UNSAT, robustness is certified at radius ε and the lower bound ε is
+raised accordingly (Line 16). If the result is SAT, a counterexample is returned
+and used to tighten the upper bound ε based on its distance from x0 (Line 19). If
+the verification attempt times out, the algorithm conservatively adapts its search
+direction and step size without updating the bounds (Line 22).
+The procedure terminates once the interval width ε −ε falls below the target
+precision δ, or when the available time budget is exhausted. The final bounds
+(ε, ε) are then returned (Line 28).
+E.2
+Input-Split Verification with Incremental Reuse
+This appendix provides pseudocode and a description of the input-split verifi-
+cation procedure used for neural network properties in Section 4.2. We present
+the algorithmic workflow by which the input space is recursively partitioned
+when verification queries time out, enabling the solver to make progress on
+difficult instances. In addition, we highlight the modifications required to enable
+incremental reuse of learned conflicts across related verification queries.
+Given a neural network f : Rn →Rm, a property ϕ to verify, the objective is
+to determine whether the property holds over the input space. The procedure is
+presented in Algorithm 4. As in the previous use case, it relies on a verification
+subroutine Verify(...) that, given a verification query Q with input bounds
+and a timeout T, determines whether the property holds for all inputs in the
+constrained space. In other words, it returns one of three possible outcomes:
+UNSAT, SAT, or TIMEOUT. In non-incremental mode, the call takes only the
+parameters Q and T as input: Verify(Q, T). In incremental mode, the call
+Verify(Q, T, id, I) additionally takes a unique query identifier id and a set of
+inherited query identifiers I, enabling reuse of learned conflicts. The elements
+related to incremental reuse are highlighted in blue in the algorithm.
+The algorithm constructs an initial verification query Q0 from the network f
+and property ϕ, then invokes the recursive search procedure InputSplitSearch.
+At each node, the algorithm attempts to verify the current query Q with timeout
+T (Line 7). In incremental mode, the query is assigned a fresh identifier and aug-
+mented with a set of inherited identifiers from ancestor queries. If the verification
+returns a conclusive result (SAT or UNSAT), that result is immediately returned
+(Line 8).
+When verification times out, the algorithm selects the input variable with the
+widest valid range (Line 10) and splits its domain at the midpoint, creating two
+disjoint subspaces. The parent query’s identifier is added to the inherited set I′
+for child queries, enabling conflict reuse.
+Two subproblems are created by tightening the upper bound (Line 14) and
+lower bound (Line 18) of the selected input variable. Each recursive call uses
+increased timeout α · T. If either branch finds a counterexample (SAT), the query
+returns SAT (Lines 16, 20). If the UNSAT partitions collectively cover the entire
+input space, the query is UNSAT (Line 22). Otherwise, the result is TIMEOUT
+(Line 24).
+Incremental Neural Network Verification via Learned Conflicts
+27
+E.3
+Minimal Sufficient Feature Set Extraction: Binary-Sequential
+Procedure
+This appendix provides pseudocode and a description of the recursive binary
+search workflow used in Section 4.3. The procedure repeatedly invokes a verifica-
+tion subroutine to determine whether a candidate set of features can be freed
+while preserving the reference prediction. The underlying binary search strategy
+follows [42] and is adapted here to support incremental reuse of learned conflicts
+across related verification queries, which arise along SAT and TIMEOUT branches
+of the search.
+Given a neural network f : Rn →Rm and a reference input x0 ∈Rn,
+the goal is to extract a minimal sufficient feature set for the predicted class
+c = arg maxj fj(x0). Equivalently, the goal is to partition the feature universe
+U = {1, . . . , n} into two disjoint sets: Sfixed, the set of features that must remain
+fixed to their values in x0, and Sfreed, the set of features certified freeable, such
+that fixing Sfixed suffices to preserve the prediction under arbitrary assignments
+to the features in Sfreed.
+The procedure is presented in Algorithm 5. It relies on a verification subroutine
+Verify(...) that, given a set of candidate features S to free, determines whether
+U \ S constitutes a sufficient feature set for x0. In other words, it returns one
+of three possible outcomes: UNSAT, SAT, or TIMEOUT. In non-incremental
+mode, the call takes only the parameters S and x0 as input: Verify(S, x0).
+In incremental mode, the call Verify(S, x0, id, I) additionally takes a unique
+query identifier id and a set of inherited query identifiers I, enabling reuse of
+learned conflicts. The elements related to incremental reuse are highlighted in
+blue in the algorithm.
+Algorithm 5 maintains the evolving sets Sfixed and Sfreed (Line 2). At each
+step it processes a candidate set of features Scand and attempts to certify as
+many of them as freeable. This is done by invoking the verification subroutine
+Verify(Sfreed ∪Scand, x0) (Line 9), which checks whether freeing the proposed
+features preserves the predicted class c while all remaining features are fixed to
+their values in x0.
+An UNSAT result certifies that all features in the proposed set may be
+freed, and the algorithm adds them to Sfreed (Lines 10, 18, and 22). A SAT or
+TIMEOUT result indicates that the proposed set cannot be freed as a whole, and
+the algorithm refines the candidate by splitting it into smaller subsets (Line 15)
+and continuing the search recursively on the subset(s) that remain uncertified.
+The recursion terminates at singletons (Lines 7 and 27). If a singleton feature
+cannot be freed, it is classified as necessary and added to Sfixed (Lines 13 and 28).
+Otherwise, it is added to Sfreed (Line 10). By iteratively certifying freeable
+groups and isolating necessary singletons, the procedure constructs Sfixed as an
+explanation whose fixed values suffice to preserve the prediction, while maximizing
+Sfreed.
+In incremental mode, each call to Verify is issued with a query identifier
+and a set of inherited identifiers I, representing ancestor queries whose learned
+conflicts may be reused. As shown in Algorithm 5, inheritance is updated only
+28
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+along branches where the current candidate set is not certified freeable, i.e., on
+SAT and TIMEOUT outcomes. Concretely, when the verification of a subset fails,
+the identifier of that query is added to the inherited set passed to the recursive
+call (Lines 24 and 26). In contrast, UNSAT outcomes certify freeability and do
+not induce further recursion, and therefore do not require extending the ancestry
+set.
+This design ensures that conflict inheritance is applied along refinement
+branches, enabling effective reuse while preserving soundness.
+Incremental Neural Network Verification via Learned Conflicts
+29
+Algorithm 3: Robustness Radius Interval Computation with Incremen-
+tal Reuse
+Input: Reference input x0; initial interval [εmin, εmax]; precision δ > 0; time
+budget T; verification subroutine Verify(ε) with optional incremental
+reuse of inherited conflicts
+Output: Certified bounds (ε, ε) such that ε ≤ε⋆≤ε and ε −ε ≤δ if
+completed within T.
+1 Interface: Verify(ε, x0) returns (res, xce) where
+res ∈{UNSAT, SAT, TIMEOUT} and xce ̸= ⊥only if res = SAT. In
+incremental mode, we call Verify(ε, x0, id, I) where id is the query identifier
+and I is a set of inherited query identifiers.
+2 start ←Now()
+3 ε ←εmin,
+ε ←εmax
+4 stepRatio ←1/2,
+direction ←down
+5 nextId ←0
+// counter for verification-query identifiers
+6 while (ε −ε) > δ and Now() −start < T do
+7
+w ←ε −ε
+8
+if direction = down then
+9
+ε ←ε −stepRatio · w
+10
+else
+11
+ε ←ε + stepRatio · w
+12
+id ←nextId; nextId ←nextId + 1
+13
+εid ←ε
+14
+I ←{ id′ | id′ was issued earlier with εid′ > ε }
+15
+res, xce ←Verify(ε, x0, id, I)
+// xce is returned only if res = SAT
+16
+if res = UNSAT then
+17
+ε ←ε
+18
+stepRatio ←1/2; direction ←down
+19
+else if res = SAT then
+20
+ε ←∥xce −x0∥∞// counterexample might yield a tighter bound
+21
+stepRatio ←1/2; direction ←down
+22
+else
+// TIMEOUT
+23
+if direction = down then
+24
+stepRatio ←stepRatio/2
+25
+direction ←up
+26
+else
+27
+direction ←down
+28 return ε, ε
+30
+Raya Elsaleh, Liam Davis, Haoze Wu, and Guy Katz
+Algorithm 4: Input-Split Verification with Incremental Reuse
+Input: Neural network f : Rn →Rm; property ϕ; initial timeout T0; timeout
+factor α; verification subroutine Verify(Q, T) with optional
+incremental reuse of inherited conflicts
+Output: Verification result: res ∈{UNSAT, SAT, TIMEOUT}.
+1 Interface: Verify(Q, T) returns res ∈{UNSAT, SAT, TIMEOUT} where Q is
+a verification query with input bounds and T is the timeout. In incremental
+mode, we call Verify(Q, T, id, I) where id is a query identifier and I is a set
+of inherited (ancestor) query identifiers.
+2 nextId ←0
+// counter for query identifiers
+3 Q0 ←ConstructQuery(f, ϕ)
+// initial query
+4 return InputSplitSearch(Q0, T0, ∅)
+5 Function InputSplitSearch(Q, T, I)
+6
+id ←nextId; nextId ←nextId + 1
+7
+res ←Verify(Q, T, id, I)
+8
+if res = SAT or res = UNSAT then
+9
+return res
+10
+v ←SelectWidestInput(Q)
+11
+[ℓ, u] ←GetBounds(Q, v)
+12
+m ←(ℓ+ u)/2
+13
+I′ ←I ∪{id}
+// inherit from parent
+14
+QL ←TightenUpper(Q, v, m)
+15
+resL ←InputSplitSearch(QL, α · T, I′)
+16
+if resL = SAT then
+17
+return SAT
+18
+QR ←TightenLower(Q, v, m)
+19
+resR ←InputSplitSearch(QR, α · T, I′)
+20
+if resR = SAT then
+21
+return SAT
+22
+if resL = UNSAT and resR = UNSAT then
+23
+return UNSAT
+24
+else
+25
+return TIMEOUT
+Incremental Neural Network Verification via Learned Conflicts
+31
+Algorithm 5: Minimal Sufficient Feature Set Extraction with Incremen-
+tal Reuse
+Input: Neural network f; reference input x0 ∈Rn; target class
+c = arg maxj fj(x0); feature universe U = {1, . . . , n}; verification
+subroutine Verify(S) with optional incremental reuse of inherited
+conflicts.
+Output: feature set that must remain fixed (Sfixed), feature set certified
+freeable (Sfreed).
+1 Interface: Verify(S, x0) returns res ∈{UNSAT, SAT, TIMEOUT} and verifies
+if U \ S is a sufficient feature set for x0. In incremental mode, we call
+Verify(S, x0, id, I) where id is a query identifier and I is a set of inherited
+(ancestor) query identifiers.
+2 Sfixed ←∅;
+Sfreed ←∅
+3 nextId ←0
+// counter for query identifiers
+4 BinaryMinimalSufficiencySearch(U, ∅)
+5 return Sfixed, Sfreed
+6 Function BinaryMinimalSufficiencySearch(Scand, I)
+7
+if |Scand| = 1 then
+8
+id ←nextId; nextId ←nextId + 1
+9
+res ←Verify(Sfreed ∪Scand, x0, id, I)
+10
+if res = UNSAT then
+11
+Sfreed ←Sfreed ∪Scand
+12
+else
+// SAT or TIMEOUT
+13
+Sfixed ←Sfixed ∪Scand
+14
+return
+15
+(Sleft, Sright) ←Split(Scand)
+16
+idleft ←nextId; nextId ←nextId + 1
+17
+resleft ←Verify(Sfreed ∪Sleft, x0, idleft, I)
+18
+if resleft = UNSAT then
+19
+Sfreed ←Sfreed ∪Sleft
+20
+idright ←nextId; nextId ←nextId + 1
+21
+resright ←Verify(Sfreed ∪Sright, x0, idright, I)
+22
+if resright = UNSAT then
+23
+Sfreed ←Sfreed ∪Sright
+24
+else
+// SAT or TIMEOUT
+25
+BinaryMinimalSufficiencySearch(Sright, I ∪{idright})
+26
+else
+// SAT or TIMEOUT
+27
+if |Sleft| = 1 then
+28
+Sfixed ←Sfixed ∪Scand
+29
+else
+30
+BinaryMinimalSufficiencySearch(Sleft, I ∪{idleft})
+31
+BinaryMinimalSufficiencySearch(Sright)

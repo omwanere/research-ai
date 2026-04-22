@@ -1,0 +1,468 @@
+Investigating student perceptions of creativity and generative ai in computational physics
+Pachi Her and Patti Hamerski
+Department of Physics, Oregon State University, 1500 SW Jefferson Way, Corvallis, OR 97333
+Generative Artiﬁcial Intelligence (gen-AI) is rapidly becoming more integrated into today’s classrooms in all
+ranges of education. In higher education, Gen-AI is often seen as a resource for students, aiding them in drafting
+outlines, solving simple mathematical problems, or even decoding or constructing code. In this paper, we
+analyze essay-based interviews (N=6) from an upper-division computational physics course, in which physics
+majors addressed their views and attitudes towards Gen-AI and how it affects their learning. We analyzed the
+concepts of creativity and gen-AI using the Four C Model, a framework encompassing four types of creativity.
+Our analysis of the data involved coding and characterizing students’ deﬁnitions of creativity and generative
+AI. Our ﬁndings revealed two main observations: ﬁrst, students conceptualized their creativity primarily within
+mini-c and little-c; second, students perceived gen-AI as a resource and learning tool but expressed skepticism
+regarding its accuracy and creativity.
+2024 PERC Proceedings edited by Ryan, Pawl, and Zwolak; Peer-reviewed, doi.org/10.1119/perc.2024.pr.Her
+Published by the American Association of Physics Teachers under a Creative Commons Attribution 4.0 license.
+Further distribution must maintain the cover page and attribution to the article's authors.
+ 
+181
+I.
+INTRODUCTION
+Generative artiﬁcial intelligence (gen-AI) are AI systems
+capable of generating various types of content, including text,
+images, audio, and video, based on their training data and
+user inputs [1]. These systems respond to prompts which
+can be either unimodal (single type of input) or multimodal
+(multiple types of input).
+An example is ChatGPT, short
+for “Chat Generative Pre-trained Transformer,” developed by
+OpenAI. Notably, ChatGPT simulates human-like conversa-
+tions in real-time. Several implementations of gen-AI include
+Copilot, Gemini, Jasper, and many others.
+Given its versatility and recency, gen-AI is increasingly
+prevalent in today’s education landscape, spanning various
+grade levels from K-12 to college. It is used in curriculum
+development by teachers and consulted for homework help
+by students [2]. While research on gen-AI in education is
+still relatively limited, it is gaining traction across various
+ﬁelds [3, 4]. Similarly, research within the Physics Education
+Research (PER) community on gen-AI is expanding rapidly,
+with a focus on assessing the quality and accuracy of AI re-
+sponses in physics tasks [5–9]. For instance, Sirnoorkar et al.
+examined and compared responses from students and Chat-
+GPT on speciﬁc physics problems to investigate their sense-
+making and mechanistic reasoning processes [10]. Polverini
+and Gregorcic assessed ChatGPT’s performance in interpret-
+ing kinematic graphs, highlighting both its limitations and ca-
+pabilities [11]. Much of the work done in PER has focused
+on the high school to lower-division physics level. We could
+not ﬁnd any research that has looked into the role of gen-AI
+in computational physics courses, nor upper-division under-
+graduate physics contexts.
+Our study is motivated by two key factors. Despite limited
+exploration at the intersection of gen-AI and physics, partic-
+ularly within computational physics, the inherent problem-
+solving and modeling nature of computational physics aligns
+well with gen-AI capabilities.
+The integration of gen-AI
+as an advanced search tool, akin to common practices like
+googling and debugging in computing, presents potentially
+useful applications for gen-AI. With computational physics
+gaining traction in both research and education, there is a
+growing need for innovative tools and methodologies to en-
+hance teaching and learning in computational courses [12].
+Second, as gen-AI increasingly permeates today’s educa-
+tion, its relationship with creativity development becomes
+more pronounced. A growing body of research has delved
+into this relationship across various contexts [13]. Marrone et
+al. used the Four C model of creativity to investigate middle
+school students’ perceptions of AI and creativity. Their work
+serves as an inspiration for our study as they called for further
+exploration on AI and the Four C model in other education
+contexts, especially in the development of mini-c and little-c
+creativity, where “the creative output is not as crucial as the
+self-discovery that occurs through the creative process.” [14].
+Thus, the research question of our study is: How are students’
+conceptual framings of their creativity connected to their per-
+ceptions of gen-AI in a computational physics education con-
+text?
+II.
+THEORETICAL FRAMEWORK
+The Four C Model by Kaufman and Beghetto serves as our
+theoretical framework and aids with characterizing our stu-
+dents’ perceptions of creativity [15]. The framework em-
+phasizes that creativity is a developmental quality rather than
+innate. This framework was constructed to help conceptual-
+ize and classify the different levels of creative expression. As
+the name of the framework implies, there are four types or
+levels of creativity: mini-c, little-c, Pro-C, and Big-C. Our
+use of this model focuses mainly on mini-c and little-c, the
+types of creativity most closely associated with students’ en-
+gagement with the creative process [14]. This model demon-
+strated its relevance for understanding gen-AI applications as
+mentioned in the previous section by Marrone et al..
+Kaufman and Beghetto deﬁned mini-c as the “novel and
+personally meaningful interpretation of experiences, actions,
+and events.” This type of creativity centers the individual,
+who ﬁnds meaning and interest in their creative product. The
+creative product typically does not get shared or exposed to
+the social surroundings. Kaufman and Beghetto introduced
+this type of creativity to “encompass the creativity inherent in
+the learning process.” The next type of creativity is little-
+c which follows the standard deﬁnition of creativity from
+Plucker et al: “the interaction among aptitude, process, and
+environment by which an individual or group produces a
+perceptible product that is both novel and useful as deﬁned
+within a social context.” [16]. A key element that differenti-
+ates little-c from mini-c is the social factor.
+In Pro-C and Big-C, the creator is a domain expert, which
+lies in contrast to the students in this study who are early in
+their physics career. For this reason, the nuances between
+Pro-C and Big-C are shown in Table 1 but not highlighted
+here because we observed very few excerpts from the data
+that reﬂected Pro and Big-C levels, which we will address in
+the last section of this paper.
+III.
+METHODS
+We took an interpretive approach to data generation and
+analysis because we wished to explore how students viewed
+the role of gen-AI in their creative pursuits. This approach
+led to the methods below, which centered students’ interpre-
+tations of gen-AI [17]. Taking a qualitative approach and
+focusing on a single context were intentional choices for this
+work because qualitative research on single cases can capture
+the narrative of studentsâ attitudes, understanding, and use of
+gen-AI in their creative works with the detail needed for an
+understudied area such as this [18]. This paper explores how
+students in a computational physics course perceive gen-AI
+182
+and the extent to which they have used gen-AI in their cre-
+ative processes.
+A.
+Data Generation
+The data we collected took place at Oregon State Uni-
+versity in a series of upper-division computational physics
+courses called PH 36X. This course sequence spans three-
+terms with the majority of enrollment being physics majors
+in their junior year. The course sequence aims to teach the
+fundamentals of programming in Python and how to utilize
+computing as a tool for doing and learning about physics phe-
+nomena. Students encounter a variety of physics topics with
+tasks intentionally designed as open-ended, with the goal of
+fostering experimentation and discovery of diverse solutions.
+During the time of the study, the participants were enrolled
+in the second term of the course, PH 366. Six students con-
+sented to partake in this study and were compensated with
+a $20 Amazon gift card. These students had varying lev-
+els of computational experience. Of the six participants, one
+had taken a computer science course (data structures) prior to
+this course sequence, one had informal programming train-
+ing, and all six had taken or waived the ﬁrst course (PH 365)
+of this course sequence, a one credit course that covers intro-
+ductory programming concepts in python and their applica-
+tions to physics problems.
+The data we collected were narrative essays, which con-
+sisted of three essay prompts that addressed topics on gen-
+AI/ChatGPT, creativity, and intuition. Our intention of con-
+ducting narrative essays was inspired by the work from Lo-
+Presto and Drake, where they explained how collecting math-
+ematics stories or narratives from preservice and in-service
+math teachers can provide helpful insight and understanding
+in their relationships to the ﬁeld of mathematics, aiding with
+curriculum design and instruction [19]. Our aim with using
+narrative essays is similar such that we wanted to capture the
+students’ perspectives in their words. Although conducting
+interviews could potentially evoke the same objective, narra-
+tive essays can be advantageous by allowing students to re-
+ﬂect and also reevaluate what they are writing about.
+The ﬁrst essay prompt asked students about their views and
+opinions on gen-AI. The second prompt asked students to de-
+ﬁne creativity (and intuition) in their own words along with
+sharing any examples of when they were creative in [any of]
+their physics course(s). In the third prompt, we brought the
+two concepts of gen-AI and creativity together and asked stu-
+dents to describe the relationship between them and explain
+whether gen-AI affects their creativity. The prompts were
+drafted and ﬂeshed out after the authors wrote various drafts
+of the questions based on literature review and classroom ex-
+perience, and solicited discussion-based feedback from the
+broader physics education research group at Oregon State
+University.
+The participants were asked to meet with the ﬁrst author
+individually via Zoom or in-person to participate in the narra-
+tive essays. Participants were instructed before writing to re-
+spond to each prompt in the order presented to them and were
+encouraged to express their genuine feelings and share any
+experiences they were comfortable sharing for each prompt.
+The order of the prompts was placed in the speciﬁc sequence
+presented earlier to have students think about gen-AI and cre-
+ativity separately. The purpose of this was to not prime stu-
+dents to connect the two topics and let them discuss the two
+without forcing a connection before reaching the last prompt.
+Each participant completed the essay prompts within an hour.
+B.
+Data Analysis
+The Four C Model was used to code the responses. How-
+ever, we expanded the deﬁnitions to accurately reﬂect and
+characterize the student responses with the incorporation of
+gen-AI, as seen in Table 1. The analysis process involved it-
+erative stages of reading, interpreting, and coding the written
+responses. Initially, the unrevised deﬁnitions of the Four Cs
+were applied in the ﬁrst round of analysis. An illustration of
+this initial analysis process can be seen when we analyzed
+Bruce’s response to prompt 2, to which he responded:
+“Creativity comes from when you’re complet-
+ing a task, and you ﬁnd a way to do it without
+following a step-by-step formula.
+Maybe this
+means you found an interesting string of code
+to solve a problem where you weren’t explicitly
+trained to solve that speciﬁc problem. It could
+also mean that you added your own personal
+ﬂair to something, like art or writing. Maybe
+it means you’ve been given a complicated prob-
+lem that you’ve never seen before and you have
+to piece together all the skills you’ve learned in
+non-obvious ways.” (emphasis added by the au-
+thors)
+Applying the original deﬁnitions of the Four C model, we
+categorized Bruce’s response as closely aligned with the con-
+cept of mini-c. The bolded phrase represents our initial cod-
+ing of mini-c. Bruce made the comment of adding “your own
+personal ﬂair to something,” resembling the original deﬁni-
+tion of mini-c as “the novel and personally meaningful inter-
+pretation of experiences, actions, and events,” wherein indi-
+viduals incorporate their personal interpretation or style.
+The following stages of analysis involved iteratively ex-
+panding the Four C’s deﬁnitions and recoding the written
+responses. The italicized phrases emphasize the expanded
+mini-c elements in the revised deﬁnitions to incorporate the
+notion of learning as an inherent component of the creativity
+process, particularly at the mini-c level. Finally, we incorpo-
+rated gen-AI into the deﬁnition when we reviewed prompts
+1 and 3 which asked about perceptions of gen-AI. Bruce re-
+sponded to prompt 1 with the following:
+“Looking at where generative AI is today, I think
+that it has a lot of value to be used as a tool...It
+183
+Table I. The expanded deﬁnitions of the 4C Model. The expanded version also includes how gen-AI ﬁts into each type of creativity.
+can also be used to help with the creative process,
+like brainstorming or formatting.”
+Bruce mentions the learning process that we had included
+in the deﬁnition for mini-c (brainstorming, exploration and
+gathering information, etc.) realizing the role gen-AI plays in
+mini-c. Table 1 was the ﬁnal version of our codebook for the
+analysis presented in this paper.
+IV.
+RESULTS
+We coded all three essay prompts for each participant.
+Based on the data, two main observations were made.
+1. Students framed their creativity around mini-c and
+little-c. Several participants expressed the idea that creativ-
+ity stemmed from the individual’s prior experience, reﬂecting
+mini-c’s emphasis on the individual as well as the learning
+involved in the creative process. The following is an example
+from the data that reﬂected mini-c.
+“Looking further into the word it almost seems
+like creativity is the ability or being able to cre-
+ate something. Looking even further, it could
+also be being able to create something new...One
+could say we are not necessarily creating some-
+thing new, but we are creating a solution that is
+new to us.” – Robin, Prompt 2
+Robin deﬁned creativity as the process of “being able to cre-
+ate something” and further commented that “One could say
+we are not necessarily creating something new, but we are
+creating a solution that is new to us,” demonstrating the in-
+dividual nature of mini-c. Little-c, akin to to mini-c but with
+a social component, extends beyond individual perspective to
+include the social context where the creative product is shared
+with the individual’s social circle. Here, the creative prod-
+uct is shared with the individual’s social circle. An example
+demonstrating little-c follows.
+“I would deﬁne creativity as the ability to think
+outside the box or ﬁnd new/innovative ways to
+solve a problem...Sometimes in PH [blinded] one
+of my classmates sitting near me may have got-
+ten the same answer or end result by organizing
+their code differently or using different functions
+to perform the same tasks, which is why it’s im-
+portant to collaborate and combine our creativity
+with others.” – Summer, Prompt 2
+In this excerpt, Summer initially deﬁned creativity as a prod-
+uct that is novel and innovative. She then recalled instances
+in her computational physics course that aligned with little-
+c, emphasizing collaboration and combining creativity with
+classmates. She noted that her classmates sometimes arrived
+at the same solution despite writing different codes from hers.
+This illustrates little-c’s social aspect where creative products,
+such as the codes that Summer described in her response, are
+being shared to the social environment, the classmates.
+The remaining participants echoed Robin and Summer’s
+deﬁnition of creativity. Luke, Mateo, and Ali for instance,
+deﬁned creativity similarly to Summer, using words such as
+“novelty” or “thinking outside the box,” highlighting the im-
+portance of the product being new and original. We also ob-
+served their responses mirroring little-c’s characteristic of so-
+cial recognition. Conversely, Bruce’s deﬁnition closely re-
+sembled to Robin’s response, highlighting mini-c elements
+as we saw in the previous section.
+2. Students possessed distinct views on human creativ-
+ity and gen-AI creativity: while gen-AI is viewed as a sup-
+portive resource during mini-c, some students saw it as
+unreliable for little-c creativity. The second observation ad-
+dresses the attitudes towards human creativity and connec-
+tions between gen-AI and creativity, examined in prompts 1
+and 3. Responses to these prompts predominantly fell into
+the mini-c category, viewing gen-AI primarily as a tool for
+independent learning (e.g., brainstorming, information gath-
+ering, and outlining ideas). Despite students utilizing gen-AI
+as mini-c, we observed a theme in their responses express-
+ing doubt and skepticism regarding the outputs that gen-AI
+184
+produces. We present several examples illustrating these ob-
+servations.
+“AI can be used to generate ideas or help brain-
+storm, but we should always consider what it
+says with a grain of salt (or a few), especially
+since this is still a relatively new technology &
+more keep coming at. Sometimes AI will give a
+response that’s against what my intuition would
+tell me is true, so we deﬁnitely need to be wary
+of twisting everything it generates.” – Summer,
+Prompt 3
+Here, Summer illustrates the use of gen-AI as a learning tool,
+aiding her in generating and conjuring ideas. However, she
+immediately expresses caution regarding the quality of gen-
+AI’s responses, writing, “we should always consider what it
+says with a grain of salt (or a few)”. We observed that this
+cautious approach stemmed from her past experiences where
+gen-AI conﬂicted with her intuition causing her wariness of
+gen-AI’s outputs. Similarly, we see caution from Luke who
+also utilized gen-AI as a learning assistant but voiced skepti-
+cism and disappointment over its usage.
+“The times I have used generative AI for cre-
+ative inspiration have usually ended in disap-
+pointment. I once had an essay to write and, to
+experiment, asked ChatGPT to perform various
+aspects of the process (brainstorm, outline, draft,
+revise). The ﬁrst three steps are more “genera-
+tive, and its outputs were unoriginal and unin-
+spiring.
+On the other hand, it was useful for
+the less creative task of clarifying sentence struc-
+ture.” – Luke, Prompt 3
+We encounter another mini-c perspective on gen-AI from
+Luke. Luke utilized gen-AI for various learning tasks, includ-
+ing brainstorming, outlining, drafting, and revising. However,
+echoing the recurring theme from the previous excerpt, Luke
+expressed disappointment in gen-AI, noting that its generated
+products were “unoriginal and uninspiring.” This sentiment
+mirrored the distrust and skepticism observed in other partic-
+ipants like Summer. Additionally, Luke’s response also re-
+ﬂected little-c when he mentioned “revising” as one of the
+ways of using gen-AI, which must involve him sharing his
+work with ChatGPT. His ﬁnal remark reﬂects the notion that
+while gen-AI may fall short in fostering creativity, it can still
+provide utility in certain aspects of the learning process.
+We found that the majority of participants utilized gen-AI
+in mini-c ways, but we did observe a few instances of little-
+c. In Summer’s response to prompt 1, she had shared that
+she had used gen-AI to review her code and praised it for
+ﬁnding errors but critiqued its ability in providing workable
+code. This demonstrates gen-AI’s feedback is akin to sharing
+one’s product with their social surroundings.
+V.
+DISCUSSION & CONCLUSION
+Our results presented how our participants conceptualize
+creativity and how they feel about the use of generative AI
+in a computational physics classroom. We observed a pattern
+of skepticism amongst the responses, revealing to us that our
+participants are using gen-AI in mini-c ways but have learned
+that gen-AI cannot always be trusted, warranting being criti-
+cal of its outputs. This demonstrates that our participants are
+recognizing the important nuances of how to use gen-AI ef-
+fectively. However, one student, Robin, felt contrastingly and
+said that gen-AI can be creative and has the ability to cre-
+ate new content from prior ‘experiences’. We observed that
+Robin humanized AI, communicating the idea that AI has
+prior experiences like humans. This observation poses the
+question of whether students humanizing gen-AI will lead to
+more acceptance of the tool and lead to having a more posi-
+tive attitude towards it. Additionally, it questions whether it
+could lead to undue conﬂation of AI and human contributions
+to creative processes, potentially revealing insights about hu-
+man creativity. This narrative of humanizing AI should be
+studied further to provide deeper insight on the roles of how
+our views on gen-AI can impact our creativity.
+With only six participants, we recognized this study has
+its limitations as the results we have observed may not be
+generalizable to larger populations; the few remarks of Pro-C
+and Big-C could potentially be due to the small data collec-
+tion. However, this encourages for further work in collecting
+more data on students’ perspectives to be able to reach more
+broader claims. As our work stands now in the research pre-
+sented here, this narrow focus allowed us to examine how our
+participants conceptualized mini-c and little-c creativity in
+detailed and nuanced ways. Additionally, investigating how
+students are prompting gen-AI may be another potential re-
+search to observe the interplay between a student’s efﬁcacy
+of the tool to their perspective of gen-AI and creativity.
+This study presents our initial exploration into how stu-
+dents perceive and utilize creativity and gen-AI’s capability
+within a computational physics course.
+The demonstrated
+interaction between creativity and utilization of gen-AI has
+implications for education as gen-AI continues to develop
+and become more prevalent. Our aim with this paper is to
+catalyze further studies and inquiries on the effects and dy-
+namics of gen-AI and creativity in computational physics.
+This work builds on Marrone et al’s research to investigate
+the connection between creativity and gen-AI among physics
+majors [14]. We examined how gen-AI could either bolster
+or constrain human creativity, and focus particularly on its
+implications within the realm of computational physics.
+ACKNOWLEDGMENTS
+The authors wish to express their appreciation to the PER
+team at Oregon State University for their feedback and sup-
+port.
+185
+[1] Garcia Penalvo Francisco and Vazquez Ingelmo Andrea, Int.
+Journal of Interactive Multimedia and AI, vol.8, p. 7-16
+[2] Cooper Grant, in Journal of Sci Ed and Tech, vol. 32
+[3] Qadir, Junaid, Engineering Education in the Era of ChatGPT:
+Promise and Pitfalls of Generative AI for Education, 2022
+[4] Yilmaz, Ramazan and Karaoglan Yilmaz, Fatma Gizem, in
+Computers in Human Behavior: Artiﬁcial learning, vol. 1,
+p.100005
+[5] Kieser, Fabian and Wulff, Peter and Kuhn, Jochen and Küche-
+mann, Stefan, Phys. Rev. Phys. Educ. Res., vol. 19, p.020150
+[6] Küchemann, Stefan and Steinert, Steffen and Revenga, Natalia
+and Schweinberger, Matthias and Dinc, Yavuz and Avila, Ka-
+rina E. and Kuhn, Jochen, Phys. Rev. Phys. Educ. Res., vol.19,
+p.020128
+[7] Dahlkemper, Merten Nikolay and Lahme, Simon Zacharias
+and Klein, Pascal, Phys. Rev. Phys. Educ. Res., vol. 19,
+p.010142
+[8] Kortemeyer, Gerd, Phys. Rev. Phys. Educ. Res., vol. 19,
+p.010132
+[9] Kortemeyer, Gerd, Phys. Rev. Phys. Educ. Res., vol. 19,
+p.020163
+[10] Zollman, Dean and Sirnoorkar, Amogh and Laverty, James,
+Analyzing AI and student responses through the lens of sense-
+making and mechanistic reasoning, 2023
+[11] Polverini, Giulia and Gregorcic, Bor, Phys. Rev. Phys. Educ.
+Res., vol.20, p. 109
+[12] Caballero, Marcos D. and Fisler, Kathi and Hilborn, Robert C.
+and Romanowicz, Colleen Megowan and Vieyra, Rebecca, in
+American Association of Physics Teachers, 2020
+[13] Doshi, A. R., and Hauser, O. P. (2023). Generative artiﬁcial
+intelligence enhances individual creativity but reduces the col-
+lective diversity of novel content (No. 2312.00506).
+[14] Marrone, Rebecca and Taddeo, Victoria and Hill, Gillian, Jour-
+nal of Intelligence, vol. 10, p.65
+[15] Kaufman, James and Beghetto, Ronald, Review of General
+Psychology - REV GEN PSYCHOL, vol. 13
+[16] Plucker, Jonathan and Beghetto, Ronald and Dow, Gayle, Edu-
+cational Psychologist, vol.39, p. 83-96
+[17] Merriam, Sharan B., Qualitative research in practice : exam-
+ples for discussion and analysis / Sharan B. Merriam and as-
+sociates., 2002
+[18] Ormston, Rachel and Spencer, Liz and Barnard, Matt and
+Snape, Dawn. “The Foundations of Qualitative Research.”
+Qualitative Research Practice: A guide for Social Science Stu-
+dents and Researchers, edited by Ritchie, Jane, et al., Sage,
+2014.
+[19] LoPresto, Kevin and Drake, Corey, Teaching Children Mathe-
+matics, vol.11, p.266-271
+186

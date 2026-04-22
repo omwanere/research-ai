@@ -1,0 +1,2194 @@
+GlyphBanana: Advancing Precise Text Rendering Through Agentic Workflows
+Zexuan Yan1,2∗
+Jiarui Jin2∗
+Yue Ma3
+Shijian Wang2,4
+Jiahui Hu5
+Wenxiang Jiao2
+Yuan Lu2†
+Linfeng Zhang1†
+1Shanghai Jiao Tong University
+2Xiaohongshu Inc.
+3Hong Kong University of Science and Technology
+4Southeast University
+5South China University of Technology
+Figure 1. Gallery of various text rendering results sampled by GlyphBanana.
+Abstract
+Despite recent advances in generative models driving
+significant progress in text rendering, accurately gener-
+ating complex text and mathematical formulas remains
+a formidable challenge.
+This difficulty primarily stems
+from the limited instruction-following capabilities of cur-
+rent models when encountering out-of-distribution prompts.
+To address this, we introduce GlyphBanana, alongside a
+corresponding benchmark specifically designed for ren-
+dering complex characters and formulas.
+GlyphBanana
+∗Equal contribution.
+† Corresponding author.
+employs an agentic workflow that integrates auxiliary
+tools to inject glyph templates into both the latent space
+and attention maps, facilitating the iterative refinement
+of generated images.
+Notably, our training-free ap-
+proach can be seamlessly applied to various Text-to-Image
+(T2I) models, achieving superior precision compared to
+existing baselines.
+Extensive experiments demonstrate
+the effectiveness of our proposed workflow.
+Associated
+code is publicly available at https://github.com/
+yuriYanZeXuan/GlyphBanana.
+1
+arXiv:2603.12155v1  [cs.CV]  12 Mar 2026
+Out of Distribution (OOD), good 
+in style but bad in precision
+Highest precision, but 
+with poor style
+Within distribution, good in 
+both precision and style
+Deterministic system 
+font rendering.
+Rendering complex text with 
+diffusion model when OOD. 
+Rendering daily & common text 
+with diffusion model.
+Bridge the Gap？
+Figure 2. The illustration of motivation. We observe that while in-distribution cases show satisfying precision-style banlance, there exists
+huge gap between OOD cases and deterministic rendered texts.
+1. Introduction
+Recent diffusion transformers [5, 29, 32, 33, 35, 37, 41]
+have demonstrated remarkable progress in image genera-
+tion, driving a wide range of applications such as com-
+mercial advertising, poster design, and scientific visualiza-
+tion. In these contexts, accurate text rendering plays a crit-
+ical role, imposing stringent demands on both the general-
+izability of diffusion models and their capacity for multi-
+lingual instruction following. Basic mainstreaming genera-
+tive models, such as Z-Image [49] and Qwen-Image [56],
+excel at rendering frequently encountered text, including
+short English phrases, common everyday Chinese expres-
+sions, and simple mathematical equations. But they perform
+poorly on rare English words, complex Chinese characters,
+and sophisticated scientific formulas (as exemplified in Fig-
+ure 2).
+To improve their precise text rendering performance,
+existing approaches can be broadly categorized into two
+paradigms, namely training-based and training-free meth-
+ods. Training-based approaches, such as GlyphByT5 [26]
+and FluxText [15], adopt strategies of either LoRA-based
+fine-tuning or fine-tuning on the text encoder. Despite their
+effectiveness in certain scenarios, these methods commonly
+suffer from limited generalization ability and a heavy re-
+liance on high-quality annotated datasets.
+Training-free
+methods, such as TextCrafter [48] and FreeText [66], typi-
+cally incorporate a glyph prior as a spatial layout constraint
+to regulate and guide text rendering. However, an overly
+strong glyph prior tends to disrupt the background and over-
+all visual style of the image, resulting in style inconsistency
+between the rendered text and its surrounding content. We
+also note that system font tools offer high-precision text ren-
+dering capabilities, yet lack flexibility, as they require hand-
+crafted designs to adapt to specific styles.
+In this paper, we propose a novel agentic workflow,
+termed GlyphBanana, which effectively integrates the pre-
+cise rendering capabilities of system font rendering tools
+with the generative flexibility of diffusion models, thereby
+enabling autonomous adaptation to arbitrary styles with-
+out requiring any manual design intervention. Specifically,
+GlyphBanana operates through the following four sequen-
+tial stages. In the extraction stage, GlyphBanana first em-
+ploys vision-language models to extract the target text con-
+tent and the desired rendering style from the input prompt.
+Subsequently, in the draft preview stage, text-to-image
+models are applied to generate a preliminary image in the
+desired style as a reference preview, which is followed
+by a layout planner equipped with text grounding tools
+to produce a glyph template that encapsulates detailed at-
+tributes, including font type, color, bounding box coordi-
+nates, and rotation parameters. The glyph injection stage
+constitutes the core component of GlyphBanana, wherein
+the produced glyph template is integrated into the genera-
+tive model through both latent space and attention modules.
+Specifically, for the latent space, frequency decomposition
+is employed to disentangle the denoising representations
+of the glyph template into low- and high-frequency com-
+2
+A text book page 
+displays“PV=nRT” in 
+elegant font.
+Image Tokens Text Tokens
+Frequency 
+Decomposition
+Txt2Img
+Extraction
+Input Text
+Extract style and 
+text to reﬁne.
+Text: <PV=nRT> Style: elegant font, 
+research paper style
+Draft Preview
+Draft Image
+Analyze Font, Color, 
+Grounding text and 
+rotation parameters.
+Txt2Img
+Font: xxx, Glyph: 
+Color: #hex
+BBox:[[x1,y1,x2,y2],] 
+Rotation:20°
+Glyph Injection
+Latent Space
+Img2Img
+Style Refinement
+Style Target
+Bold
+Size
+Italic
+"text style": 
+   ”text printed in 
+book page…
+"colors”: #hex
+Keep background unedited 
+and make foreground text 
+harmonize…
+Image
+Score 
+Judge
+Tool Bank
+-Glyph Template
+-Diffusion  Model
+DiT Block N 
+…
+DiT Block 1
+DiT Block N 
+𝑉
+…
+𝑷𝒔𝒓𝒄
+𝑍!
+“𝐴n 𝑒𝑚𝑝𝑡𝑦 𝑡𝑒𝑥𝑡 
+𝑏𝑜𝑜𝑘 𝑝𝑎𝑔𝑒. ”
+VAE
+Encoder
+𝑋~𝒩(𝜇, 𝜎!)
+concat
+𝑍!"#
+DiT Block 1
+𝐾
+𝑄
+img2img
+img2txt
+txt2img
+txt2txt
+Re-weight
+...
+𝑄*
+Re-weight
+𝑉
+𝐾-
+𝑍!"$
+𝑍!"$"#
+...
+VAE
+𝑍%
+Font Controller
+Layout Planner
+Condition Extractor
+Style Reﬁner
+Denoising with Attention Re-weighting
+Injection
+-Attention Controller
+-Text Grounding 
+Formula
+-Font Style
+-Formula Renderer
+Iterative Reﬁne
+· Softmax(                          )
+Attention Module
+DiT Block N 
+…
+DiT Block 1
+Injection in Transitional Phase
+Figure 3. Overview of the GlyphBanana agentic pipeline. The workflow comprises four stages: (1) Extraction Stage parses the input
+into text content and style attributes; (2) Draft Preview Stage generates an initial image via a Layout Planner; (3) Glyph Injection Stage
+applies Frequency Decomposition in latent space and Attention Re-weighting inside each DiT block; (4) Style Refinement Stage employs
+iterative refinement with a Style Refiner and Score Judger. The bottom panel details the denoising process with the Attention Re-weighting.
+ponents, after which the information-dense high-frequency
+components are injected into the latent space. For the atten-
+tion modules, an attention re-weighting mechanism is in-
+troduced to incorporate the glyph template as a bias term
+into the attention maps within each DiT block. Finally, in
+the style refinement stage, the intermediate image gener-
+ated from the glyph injection stage are iteratively refined by
+jointly optimizing the refinement prompts and the generated
+images to further enhance overall image quality. It is worth
+noting that GlyphBanana is a training-free framework or-
+chestrated by a collection of plug-and-play tools, enabling
+seamless integration with arbitrary generative models.
+Existing text-rendering benchmarks [7, 24, 28, 48, 51],
+are narrowly focused on common English words or Chi-
+nese characters, systematically neglecting rare characters
+and complex scientific formulas.
+To address this limita-
+tion, we introduce GlyphBanana-Bench, a comprehensive
+text-rendering benchmark that, to the best of our knowl-
+edge, is the first to systematically evaluate text rendering
+across a diverse spectrum of difficulty levels and linguis-
+tic domains, ranging from simple common words and rare
+Chinese characters to complex multiline scientific formu-
+las.
+GlyphBanana-Bench is constructed through a com-
+bination of community-forum crawling and synthesis via
+Kimi-K2.5 [50], ensuring both diversity and scalability of
+the benchmark data.
+Extensive experiments demonstrate
+that our GlyphBanana achieves substantial improvements
+in OCR accuracy, attaining scores of 85.9 (+19.6%) on Z-
+Image and 75.8 (+6.91%) on Qwen-Image, while simulta-
+neously enhancing precision and style.
+2. Related work
+DiT for Image Generation& Editing. Diffusion Trans-
+former (DiT) [41] has emerged as an alternative to U-
+Net [43] for image generation and editing. Building upon
+this, recent works [2, 4–7, 14, 25, 27, 30, 34, 36, 45–
+47, 49, 53–56, 58, 62–64, 69] integrate Flow Match-
+ing [22] to improve training stability and inference ef-
+3
+ficiency.
+Benefiting from its unified attention architec-
+ture, DiT also demonstrates strong capabilities in image
+editing.
+Existing approaches can be broadly categorized
+into single-turn and multi-turn paradigms.
+Single-turn
+methods, such as GLIDE[38], MagicBrush[65], Prompt-
+to-Prompt[10], UltraEdit[9], and FireEdit[68], perform
+instruction-guided edits in a one-shot manner. In contrast,
+multi-turn systems[8, 39] enable iterative, context-aware
+editing through interactive feedback.
+Visual Text Rendering. Although diffusion-based meth-
+ods can generate high-quality images, rendering text in
+images remains a challenging problem due to the need
+for accurate spelling, layout coherence, and style consis-
+tency. One line of work[1, 24, 44] leverages large language
+models[42, 57] to improve spelling accuracy in generative
+models. Another line[3, 28, 60] focuses on explicitly con-
+trolling text layout and content during generation. Recent
+works further improve rendering quality from multiple per-
+spectives.
+TextCenGen[17] and TextCrafter[48] enhance
+layout and attribute consistency, while Calligrapher[31]
+and TextMaster[59] focus on style control via glyph- and
+feature-level guidance.
+SceneVTG[71] adopts a plan-
+ning–rendering pipeline with Vision Language Models to
+ensure semantically coherent text.
+Image Rendering with Agentic Workflow.
+Beyond
+single-step generation, real-world design tasks [12] of-
+ten require multi-step reasoning, iterative refinement, and
+human-like decision making.
+PosterGen[67] simulates a
+design team with specialized agents for layout and styling,
+Agent Banana[61] proposes a hierarchical planner-executor
+framework with long-horizon memory and layer-wise ma-
+nipulation.
+For image and video restoration, MoA-VR
+and AgenticIR[23, 70] extend agentic workflows to VLM-
+integrated multi-agent repair frameworks. In more complex
+settings such as creative photo retouching and task-oriented
+restoration, systems like JarvisIR, JarvisArt, 4KAgent, and
+JarvisEvo[18–20, 72] further demonstrate the effectiveness
+of agentic pipelines. Complementary to these system-level
+designs, EditThinker [16] focuses on enhancing intra-agent
+capability by formulating image editing as an explicit itera-
+tive reasoning process.
+3. Preliminaries
+3.1. Multimodal Diffusion Transformer
+The Multimodal Diffusion Transformer (MM-DiT) mod-
+els the generation of an image I conditioned on a text
+prompt P within a latent space. First, a pre-trained Varia-
+tional Autoencoder (VAE) compresses the image into a low-
+dimensional latent representation z0 = VAEenc(I).
+Following standard diffusion models, a forward process
+gradually corrupts the data z0 into Gaussian noise by adding
+noise ϵ ∼N(0, I). The noisy latent zt at timestep t is de-
+fined as:
+  z _t =  \alpha _t z_0 + \sigma _t \epsilon , 
+(1)
+where αt and σt are the noise schedule parameters. The
+training objective J is to learn a neural network, parame-
+terized by θ, to reverse this process by predicting the added
+noise:
+  \ mi n  \m athcal 
+{
+J}_\the ta  =  \mi
+n
+ 
+\mathbb {E}_{t, z_0, \epsilon } \left [ \left \| \epsilon _\theta (z_t, t, P) - \epsilon \right \|_2^2 \right ]. 
+(2)
+To parameterize the denoiser ϵθ(zt, t, P) using the MM-
+DiT architecture, the continuous latent states and discrete
+text condition must be transformed into sequence rep-
+resentations.
+The noisy latent zt is spatially patchified
+and linearly projected to form the image tokens Ximg =
+Patchify(zt). Simultaneously, the text prompt P is mapped
+by a pre-trained text encoder into a sequence of text tokens
+Xtxt = TextEnc(P). The two modality-specific token se-
+quences are then concatenated along the sequence dimen-
+sion to construct the joint hidden state for the Transformer
+network:
+  \ math b f {H } = [\,\mathbf {X}_{img} \,\|\, \mathbf {X}_{txt}\,]. 
+(3)
+After passing through the stacked MM-DiT blocks, the
+updated visual components of H are separated and un-
+patchified back to the original spatial shape to yield the final
+noise prediction ϵθ.
+4. Methods
+As illustrated in Fig. 3, our agentic workflow comprises
+four tightly coordinated stages: (1) Extraction, which parses
+the user input into text content and style attributes; (2) Draft
+Preview, which generates a preliminary image and derives a
+typography plan; (3) Glyph Injection, which integrates pre-
+cise glyph information via Frequency Decomposition and
+Attention Re-weighting; and (4) Style Refinement, which
+iteratively improves visual harmony. The injection proce-
+dure is formalised in Algorithm 1. We detail each stage
+below.
+4.1. Extraction Stage
+Given the user prompt Puser, an extractor decomposes
+it into two components: the target text content T to be
+rendered, and a style description S that characterises the
+desired visual appearance.
+This stage output reference
+ground-truth for identifying text to be rendered in subse-
+quent stages.
+4.2. Draft Preview Stage
+The draft preview stage produces a preliminary image and
+a detailed typography plan that guides glyph injection. In
+this stage, a draft image Idraft is generated according to
+the original prompt Puser, which is analysed by a Layout
+4
+Category 1: General Text for Rendering
+“category”: “F-Complex-L1”, 
+“length”: “medium”, 
+“prompt”: ‘A study guide with
+“∮∂V F·dS=∫V ∇·FdV”, “∮∂S F·dl=∫S (∇×F)·dS” written academically.’,
+“text”: ["∮∂V F·dS=∫V ∇·FdV", "∮∂S F·dl=∫S (∇×F)·dS"], 
+“text_length”: 37, “data_id”: 37, “lines”: 2
+Category 2: Formulas from Easy to Complex
+Rare En. 
+Easy En. 
+Example:
+F-Medium
+F-Complex-L1
+F-Complex-L2
+F-Easy
+Auxiliary Tools:
+1.
+ℳ!: 𝒯"#" →𝒯𝓉ℯ𝓍 : Convert text to formula which can be 
+rendered by MathJax engine, output a re-written prompt.
+2.
+𝐹'(")*(#(⋅) : Convert Tex code to formula, output SVG.
+3.
+Print (⋅) : Render SVG on empty canvas with given color, size 
+and location, output a standard image.
+4.
+Segment (⋅) : Apply Otsu to extract formula’s glyph mask from 
+printed image, output a mask image.
+5.
+𝒢(⋅): Grounding text or formula in image, analyze layout, 
+font, color and glyph size, output a layout conﬁg in jsonl.
+Rare Zh. 
+Easy Zh. 
+Artistic letter
+Example:
+“category”: “Easy En.”, “length”: “short”, 
+“prompt”: ‘A color chart displays “Orange” in bright citrus.’, 
+“text”: ["Orange"], “text_length”: 6, “data_id”: 49,
+Optional: [“ref_image”:”path_to_ref_img”, “mask_image”: “path_to_mask”]
+Auxiliary Tools:
+1.
+𝒜: Loading existing font library, output font collection. 
+2.
+Segment (⋅) : Apply Otsu to extract text mask from 
+rendered glyph template, output a mask image.
+3.
+𝒢(⋅): Grounding text or formula in image, analyze 
+layout, font, color and glyph size, output a layout 
+conﬁg in jsonl.
+Benchmark
+Figure 4. Illustration of the GlyphBanana-Benchmark with auxiliary tools. The proposed benchmark consists of two categories.
+General Text for Rendering assesses standard and stylized text rendering. Formulas from Easy to Complex evaluates formula rendering
+across varying complexities
+Table 1. Comparison of different text-rendering datasets. Num. refers to the number of samples in the dataset, and Avg.L refers to the
+average length of the char to be rendered in the dataset.
+refers to FLUX.2-klein-9B and
+refers to Qwen-Image-2512.
+Datasets
+Text Type
+Condition
+Statistics
+OCR Score
+Style Score
+En.
+Zh.
+Formulas
+Image
+Mask
+Num.
+Avg.L
+DrawTextExt [24]
+✓
+✓
+✗
+✗
+✗
+220
+17.0
+0.76
+0.81
+0.83
+0.80
+AnyText [51]
+✓
+✓
+✗
+✗
+✗
+1000
+21.8
+0.33
+0.44
+0.67
+0.69
+CVTG-2K [48]
+✓
+✗
+✗
+✗
+✗
+2000
+39.5
+0.49
+0.51
+0.75
+0.67
+LongText-Bench [7]
+✓
+✓
+✗
+✗
+✗
+320
+116.7
+0.38
+0.72
+0.69
+0.74
+Ours
+✓
+✓
+✓
+✓
+✓
+290
+32.7
+0.37
+0.71
+0.68
+0.71
+Planner, powered by the VLM equipped with text ground-
+ing tools. The planner creates a typography plan detailing
+the font, color, bounding boxes, and rotation angles for the
+generated text. This information is forwarded to the next
+stage to construct the injection template.
+4.3. Glyph Injection Stage
+Formula Renderer produces pixel-accurate glyph images
+via LATEX compilation for formulas, while for regular text, a
+Font Controller selects the appropriate font family, weight,
+and size according to typography plan P from last stage,
+outputing accurate glyph template image I.
+Along with
+rendered formulas, they are encoded by VAE into a strong
+glyph prior ztpl as a template.
+4.3.1. Frequency Decomposition.
+Frequency Decomposition is used to strengthen the high
+frequency structure of the glyph template in denoising la-
+tent by precisely injecting high frequency glyph details. We
+define the frequency-decomposed blending function as fol-
+lows:
+  \mathc al {F }_ { \text {F.D.}}(z, z_{tpl}, M) = \text {LF}(z) + \text {HF}(z)\!\odot \!(1\!-\!M) + \text {HF}(z_{tpl})\!\odot \!M, \label {eq:fd} 
+(4)
+where LF(z)=GaussianBlur(z) extracts the low frequency
+component, HF(z)=z −LF(z) extracts the high frequency
+residual, and M is the mask that specifies the glyph-covered
+tokens.
+Specifically, GaussianBlur is implemented by a
+Gaussian blur kernel to do average pooling in latent space
+on image which is rendered using system font by font con-
+troller agent according to the typography plan.
+For the
+mask M, we use Otsu’s [40] method to segment the im-
+age into foreground and background. Since directly inject-
+ing the glyph latent into the denoising latent may lead to
+artifacts, we set a injection window [τstart, τend) to con-
+trol the injection timing, leaving space for adjusting edge
+smoothness and style consistency with the background for
+diffusion model. This part is applied at each denoising step
+t ∈[τstart, τend) in the Algorithm 1, stage 3.
+5
+Algorithm 1 Injection with Attention Enhancement
+Require: Typography plan P, Prompt T, Total steps N, Injection
+window [τstart, τend), Bias scales (0 < s−< 1 < s+).
+Ensure: Glyph-injected latent z0.
+1: I ←FontRender(P);
+M ←Otsu(I)
+▷Stage 1: Preprocessing
+2: Itxt ←FindTokenIndices(T, quoted)
+3: Iimg ←{i | M[i] > 0};
+˜Iimg ←{i | M[i] = 0}
+▷glyph / non-glyph indices
+4: ˜zlist : { ˜z0, . . . , ˜
+zN} ←Inversion(VAE(I))
+▷fusion glyph template list
+5: for denoising step t = N, . . . , 1 do
+6:
+for AttnProcessori ∈DiT Block do
+▷Stage 2: Attn. re-weighting
+7:
+B ←0;
+α+ ←log(s+);
+α−←log(s−)
+8:
+B[Iimg, Itxt] += α+; B[Itxt, Iimg] += α+
+▷enhance
+9:
+B[˜Iimg, Itxt] += α−; B[Itxt, ˜Iimg] += α−
+▷suppress
+10:
+Q, K, V ←Linear(hi,t);
+ˆQ, ˆK ←RoPE(Q, K)
+11:
+hi,t−1 ←SDPAttention( ˆQ, ˆK, V, bias=B)
+▷SDPAttention definition Eq. (5)
+12:
+end for
+13:
+if t/N ∈[τstart, τend) then
+▷Stage 3: Latent Injection
+14:
+˜
+ztpl ←˜zlist[t]
+15:
+zt ←FF.D.(zt+1,
+˜
+ztpl, M)
+▷Frequency Decomposition Eq. (4)
+16:
+end if
+17:
+zt−1 ←Scheduler.step(zt, t)
+18: end for
+19: return z0
+4.3.2. Injection with Attention Enhancement.
+We introduce a technique called Glyph Injection to in-
+ject the glyph latent into the denoising latent as shown
+in the Algorithm 1, stage 2.
+As inspired by P2P [10],
+TextCrafter [48], manipulating the attention value in the
+attention processors of DiT blocks could effectively af-
+fect response of output response pattern to prompt tokens.
+Specifically, we inject the Self-Attention module within the
+DiT block. Following the standard attention formulation
+in Transformers [52], the computation incorporating a bias
+matrix B is expressed as follows:
+  \text {SDPA tte nti on }( \ hat {Q}
+,  \ hat
+ 
+{
+K }
+,
+ V, B) = \text {softmax}\left ( \frac {\hat {Q}\hat {K}^\top }{\sqrt {d}} + B \right ) V, \label {eq:sdp_attention} 
+(5)
+where ˆQ, ˆK, and V denote the projected query, key, and
+value matrices respectively.
+d is the scaling dimension,
+and B is the attention bias matrix designed for explicit re-
+weighting. The matrix B is initialized to zero, and its non-
+zero elements Bi,j are assigned by glyph-template in latent
+space, illustrated in Fig. 3, stage 3. We use the glyph latent
+template ˜ztpl to specify image tokens that are likely to be af-
+fected by the glyph injection, which can be divided into two
+parts: glyph-covered tokens, defined by Indices Iimg and
+non-glyph-covered tokens, defined by Indices ˜Iimg. Simi-
+larly, text tokens are extracted and its corresponding indices
+are defined as Itxt. For precisely control the attention com-
+puting process, we enhance the attention map value from
+Iimg to Itxt and suppress value from Itxt to ˜Iimg in the
+attention processors of DiT blocks.
+4.4. Style Refinement Stage
+4.4.1. Iterative Refinement.
+To improve text rendering quality and ensure stylistic har-
+mony with the background, we introduce an Iterative Re-
+fine module. As illustrated in Fig. 3, this module utilizes
+a pretrained image-to-image diffusion model FDM to re-
+fine the output of the Glyph Inject stage. The refinement
+is driven by a VLM that serves dual functions: a Style Re-
+finer that identifies and corrects discordant visual attributes
+(e.g., color, texture, shadow) based on intermediate outputs
+and produces an amended prompt P ′, and a Score Judger
+that evaluates each candidate and selects the optimal result.
+Formally, given the injected image Iorigin, its typogra-
+phy plan prompt P, and the glyph mask M, we construct
+a diverse candidate pool from three refinement strategies:
+Imask = M ⊙Iorigin + (1−M) ⊙FDM(Iorigin | P) which
+restricts regeneration to the non-glyph region to preserve
+text contours, Iref = FDM(Iorigin | P, M) which condi-
+tions on M as a reference to guide generation while allow-
+ing broader stylistic adjustment, and Isty = FDM(Iorigin |
+P ′, M) where P ′ is the amended prompt produced by the
+Style Refiner. The Score Judger then selects the best output
+from the candidate pool:
+  I ^{*
+} =
+ \ arg \max _{I \, \in \ , \{I _{\text  {origin}},\, I_{\text {mask}},\, I_{\text {ref}},\, I_{\text {sty}}\}} \; \mathcal {S}_{\text {VLM}}(I, P), \label {eq:score_judger} 
+(6)
+where SVLM denotes the VLM-based quality assessment.
+The system operates in a closed loop: the Style Refiner an-
+alyzes I∗, updates P ′, regenerates the candidate pool, and
+the Score Judger re-evaluates, iterating until convergence or
+a maximum number of rounds is reached.
+5. Benchmark and Evaluation Protocals
+5.1. Benchmark
+Current evaluation frameworks for text-rendering diffusion
+models inadequately assess out-of-vocabulary (OOV) to-
+kens, complex notation, and the hierarchical multiline lay-
+outs typical of scientific equations. To bridge this evaluation
+gap, we present the GlyphBanana-Benchmark as illustrated
+in Fig. 4. We delicately collect and construct a wide range
+of text and formulas to be rendered along with supplemen-
+tary tools for agentic workflow. For category of general text,
+6
+A traditional shop sign 
+shows "Halcyon" in 
+golden letters.
+⽤温馨棕⾊字体写着
+"床铺"
+A research paper 
+displays "PV=nRT" in 
+elegant LaTeX font.
+A research document 
+with "w+x+y+z=10", 
+"w-x+y-z=2", "2w+x-
+y+z=7", "w+2x+3y-
+z=8" in formal notation.
+Ours
+Flux-Klein GLM-image
+Flux-dev TextCrafter AnyText2
+Fail
+Fail
+⼀块⻛化的招牌上⽤
+传统书法写着"遮莫
+（不管，任凭）"
+Fail
+Fail
+A beach towel shows 
+"Sand" in warm tan 
+letters.
+A physics lecture 
+board shows 
+"C₆H₁₂O₆+6O₂→6CO
+₂+6H₂O" written in 
+white chalk.
+Figure 5. Qualitative comparisons with other baselines. Fail denotes the FLUX.1-dev based models unable to follow instructions to
+render chinese text due to its limited text-encoder. Besides, we color the quoted text in red, referring to the target text to be rendered, and
+color the style text related to the glyph in blue.
+we provide auxiliary tools including font library, segmenta-
+tion and text-grounding tools for specifying text font and
+layout. To the best of our knowledge, it is the first bench-
+mark to systematically evaluate text rendering capabilities
+across a comprehensive difficulty spectrum ranging from
+simple words to complex, multiline mathematical formu-
+las, while supporting multimodal inputs and auxiliary ren-
+dering tools. The dataset is meticulously constructed: the
+rare Chinese word subset is curated by crawling commu-
+nity forums [13], whereas the English and complex formula
+subsets are entirely synthesized using Kimi-K2.5 [50].
+Furthermore, we conduct quantitative evaluations with
+other similar benchmark on text type, input conditions,
+statistics of benchmark size, and score related to preci-
+sion and style metrics. Specifically, we employ two pop-
+ular open-source diffusion models to assess existing base-
+line metrics, which are
+FLUX.2-klein-9B and
+Qwen-
+Image-2512 in Table. 1.
+Results reveal that accurately
+rendering rare Chinese characters and complex formulas
+remains a challenge for current diffusion-based methods.
+More qualitative results refer to supplementary materials.
+5.2. Evaluation Protocols
+We adopt a multi-dimensional evaluation protocol cover-
+ing Optical Character Recognition(OCR) Score, Vision-
+Language Model(VLM) Score, Image-Text Matching(ITM)
+Score, and User Study. OCR Score represents the preci-
+sion of the rendered text, here we use OCR Accuracy(OCR-
+7
+Table 2. Quantitative comparison results for text-rendering metrics.
+Method
+OCR Score↑
+VLM Score↑
+ITM Score↑
+User Study↓
+Acc.
+Ned.
+Style
+Faith.
+VQA
+CLIP
+Aesthetic
+Faith.
+Ours+Z−Image
+w/o re-weight
+72.3
+76.7
+0.745
+0.704
+0.808
+0.709
+2.73
+2.70
+w/o refine
+84.0
+86.7
+0.725
+0.745
+0.798
+0.710
+3.47
+3.40
+w/o F.D.
+84.5
+87.3
+0.755
+0.764
+0.803
+0.708
+2.73
+2.83
+full
+85.9
+88.1
+0.765
+0.764
+0.814
+0.720
+1.07
+1.07
+Ours+QwenImage
+w/o re-weight
+70.7
+74.8
+0.676
+0.689
+0.814
+0.680
+2.43
+2.23
+w/o refine
+75.7
+79.6
+0.687
+0.777
+0.820
+0.697
+3.60
+3.43
+w/o F.D.
+74.5
+78.7
+0.718
+0.812
+0.819
+0.696
+2.93
+3.00
+full
+75.8
+79.9
+0.729
+0.830
+0.839
+0.694
+1.03
+1.33
+Table 3. Quantitative comparison results for text-rendering metrics.
+represents for FLUX.2-klein-9B and
+represents for Qwen-
+Image-2512.
+Method
+OCR Score↑
+VLM Score↑
+ITM Score↑
+User Study↓
+Acc.
+Ned.
+Style
+Faith.
+VQA
+CLIP
+Aesthetic
+Faith.
+AnyText2
+33.8
+40.5
+0.661
+0.438
+0.641
+0.637
+7.80
+7.62
+TextCrafter
+34.0
+39.6
+0.672
+0.371
+0.804
+0.680
+6.75
+6.47
+Flux.1
+.dev
+27.9
+34.3
+0.691
+0.280
+0.771
+0.639
+6.75
+7.03
+FluxText
+25.0
+28.4
+0.600
+0.351
+0.718
+0.656
+6.98
+6.83
+Flux.2
+.klein
+36.7
+42.1
+0.676
+0.521
+0.821
+0.686
+6.38
+6.08
+GLM-Image
+62.1
+70.8
+0.728
+0.700
+0.807
+0.681
+5.50
+5.77
+Zimage
+71.8
+76.3
+0.750
+0.703
+0.813
+0.723
+5.07
+5.12
+Qwen-Image
+70.9
+74.7
+0.705
+0.767
+0.840
+0.699
+4.63
+4.98
+Ours+zimage
+85.9 ↑14.1
+88.1 ↑11.8
+0.765 ↑0.015
+0.764 ↑0.061
+0.814 ↑0.001
+0.720 ↓0.003
+2.27
+2.58
+Ours+QwenImage
+75.8 ↑4.9
+79.9 ↑5.2
+0.729 ↑0.024
+0.830 ↑0.063
+0.839 ↓0.001
+0.694 ↓0.005
+2.87
+2.52
+Acc) and OCR Normalized Edit Distance(OCR-NED) to
+evaluate the precision of the rendered text. Define d(g, p)
+as the Levenshtein distance between the ground-truth text
+g and the predicted text p. OCR-Acc = 1 −d(g, p)/|g|,
+is a recall-oriented score that quantifies how much of the
+ground-truth text g is correctly rendered in the prediction
+p. OCR-NED = 1 −d(g, p)/ max(|g|, |p|), is a symmet-
+ric similarity that additionally penalizes hallucinated text.
+Following recent practice, we additionally query a VLM to
+obtain VLM Score, including VLM-Style related to clarity,
+coherence, and aesthetics and VLM-Faithfulness related to
+scene, object, style, and text placement adherence to the
+prompt.
+Image-Text Matching measures the alignment
+between the rendered text and the reference image, using
+CLIP Score [11] and VQA Score [21]. User Study is eval-
+uated by performing a human preference sheet on aesthetic
+and faithfulness preferences to evaluate the text rendering
+quality, ordering images from best to worst.
+6. Experiments
+6.1. Implementation Details
+In our experiments, For Text-to-Image Generation, we
+adopt two open-source diffusion backbones: QwenImage-
+2512 with 50 denoising steps and ZImage-turbo with 20 de-
+noising steps. For Style-Refiner, FLUX.2-klein-9B model
+is adopted for Image-to-Image Generation. To support the
+agent’s core planning and evaluation, we employ the pow-
+erful open-source Qwen3-VL-235B-A22B-Instruct model,
+which serves as the Layout Planner during the Draft Pre-
+view stage, Style Refiner and Score Judger during the
+Style Refine stage, OCR excecutor and VLM Score eval-
+uator for evaluation.
+All experiments are conducted on
+NVIDIA H800 GPUs. During Glyph Injection, attention
+8
+一张神秘的海报上用发光字
+体显示"玓瓑(珠光闪耀)"
+A lecture board 
+displaying "Av=λv"
+A problem set showing 
+"(iγᵘ∂ᵤ-m)ψ=0", 
+"{γᵘ,γᵛ}=2gᵘᵛ", "u,v=0,1,2,3" 
+with equations.
+w/o Injection
+w/o Refine
+Iterative Refine
+Figure 6. Qualitative comparison results.
+re-weighting is applied over denoising timesteps in the bias
+of scaled-dot-production-attention in the range (0.2, 0.8),
+with 2.0 enhancement scale and 0.1 for attention suppres-
+sion. More details are provided in the supplementary mate-
+rials.
+6.2. Comparison with baselines
+Qualitative Comparison. We conducted extensive experi-
+ments with our proposed Agentic method (Z-Image by de-
+fault) on GlyphBanana-Benchmark, comparing it with other
+approaches. Specifically, we comprehensively compare the
+text rendering capabilities of the models on simple to rare
+English, Chinese, and from simple to complex multiline for-
+mulas. As shown in Figure 5, our method achieves supe-
+rior performance in text rendering on simple to rare En-
+glish, Chinese, and from simple to complex multiline for-
+mulas compared to existing methods. For FLUX.1-dev and
+TextCrafter, Chinese rendering is not supported due to its
+limited text-encoder. For multiline formulas, other methods
+show lower precision or duplicate rendering. Our method
+supports multi-language, and shows highest precision for
+rendering formulas.
+Quantitative Comparison. We performed comprehensive
+quantitative experiments on GlyphBanana-Benchmark. Our
+methods significantly improve the metrics related to ren-
+dering precision and quality score, including User Study,
+achieving the highest text accuracy among all other methods
+including text-rendering specific approaches such as Any-
+Text2 and TextCrafter. Compared to the original text ren-
+dering baseline, the T2I matching metrics are nearly identi-
+cal, but the style and faithfulness scores are higher including
+7.62
+7.88
+8.25
+9.12
+4.88
+5.77
+8.15
+8.19
+85.9
+75.8
+         
+        +Z-Image
++Qwen-Image
+w/o refine
+w/o refine
+Iter. 1
+Iter. 1
+Iter. 2
+Iter. 2
+Iter. 3
+Iter. 3
+Text Acc.
+Visual Quality
+Figure 7. Metric comparisons for multi-turn refinement.
+w/o F.D.
+w/ F.D.
+w/o F.D.
+w/ F.D.
+Figure 8. Qualitative comparisons for illustrating methods of Fre-
+quency Decomposition.
+User Study, getting the best overall performance.
+6.3. Ablation Study
+Extensive qualitative and quantitative experiments are con-
+ducted using text accuracy, image quality, and user study
+metrics to validate the effectiveness of three key operations
+in our agentic workflow: Frequency Decomposition (F.D.
+for short), Attention Enhancement(re-weight for short), and
+Iterative Refine(refine for short).
+Ablation study of F.D. in latent space. Fig. 8 shows the
+impact of F.D. for improving the text rendering quality.
+9
+During rendering, the unwanted dark edges persist along-
+side the text strokes, as can be seen in the contours of
+’Royal’ and ’Magi’ without F.D.. With F.D., the text is ren-
+dered more harmoniously with the background than with-
+out F.D. It illustrates that F.D. preserves space for style and
+color while maintaining the text structure. In addition, Ta-
+ble 2 demonstrates metrics across precision faces compre-
+hensive decline without F.D..
+Ablation study of Injection. It can be observed from Fig. 6
+that the glyph injection significantly improves the text pre-
+cision, which can be verified by OCR scores shown in Ta-
+ble 2. It demonstrates that leveraging the glyph information
+to re-weight attention value, and injecting the glyph latent
+into the latent space gain significant improvement on text
+rendering precision.
+Ablation study of Iterative Refine. The iterative refine
+process is shown in the right side of Fig. 6, which signif-
+icantly improves the text rendering quality, and trends can
+be visual by the Fig. 7. This process contributes to improv-
+ing style score without harming the rendering accuracy. It
+indicates that iterative refinement steadily enhances the Vi-
+sual Quality of the rendered text while largely preserving
+Text Accuracy, demonstrating the effectiveness of our Style
+Refinement.
+7. Conclusion
+We present GlyphBanana, a training-free agentic frame-
+work that bridges font-level precision and diffusion-model
+flexibility via frequency-decomposed latent injection, at-
+tention re-weighting, and VLM-driven iterative refinement.
+Without any fine-tuning, it generalises across DiT back-
+bones and surpasses all baselines in both rendering accuracy
+and visual quality.
+We further contribute GlyphBanana-
+Bench, the first benchmark covering common words, rare
+characters, and complex scientific formulas.
+References
+[1] Y. Balaji, Seungjun Nah, Xun Huang, Arash Vahdat, Jiaming
+Song, Qinsheng Zhang, Karsten Kreis, M. Aittala, Timo
+Aila, S. Laine, Bryan Catanzaro, Tero Karras, and Ming-Yu
+Liu. ediff-i: Text-to-image diffusion models with an ensem-
+ble of expert denoisers. ArXiv, abs/2211.01324, 2022. 4
+[2] Siyu Cao, Hangting Chen, Peng Chen, Yiji Cheng, Yutao
+Cui, Xinchi Deng, Ying Dong, Kipper Gong, Tianpeng Gu,
+Xiusen Gu, et al. Hunyuanimage 3.0 technical report. arXiv
+preprint arXiv:2509.23951, 2025. 3
+[3] Jingye Chen, Yupan Huang, Tengchao Lv, Lei Cui, Qifeng
+Chen, and Furu Wei. Textdiffuser: Diffusion models as text
+painters. ArXiv, abs/2305.10855, 2023. 4
+[4] Yiyang Chen, Xuanhua He, Xiujun Ma, and Yue Ma. Con-
+textflow: Training-free video object editing via adaptive con-
+text enrichment. arXiv preprint arXiv:2509.17818, 2025. 3
+[5] Patrick Esser, Sumith Kulal, Andreas Blattmann, Rahim
+Entezari, Jonas M¨uller, Harry Saini, Yam Levi, Dominik
+Lorenz, Axel Sauer, Frederic Boesel, Dustin Podell, Tim
+Dockhorn, Zion English, Kyle Lacey, Alex Goodwin, Yan-
+nik Marek, and Robin Rombach. Scaling rectified flow trans-
+formers for high-resolution image synthesis, 2024. 2
+[6] Kunyu Feng, Yue Ma, Bingyuan Wang, Chenyang Qi,
+Haozhe Chen, Qifeng Chen, and Zeyu Wang. Dit4edit: Dif-
+fusion transformer for image editing.
+In Proceedings of
+the AAAI Conference on Artificial Intelligence, pages 2969–
+2977, 2025.
+[7] Zigang Geng, Yibing Wang, Yeyao Ma, Chen Li, Yongming
+Rao, Shuyang Gu, Zhao Zhong, Qinglin Lu, Han Hu, Xi-
+aosong Zhang, Linus, Di Wang, and Jie Jiang.
+X-omni:
+Reinforcement learning makes discrete autoregressive image
+generative models great again, 2025. 3, 5
+[8] Google DeepMind.
+Gemini 2.5 flash image (nano ba-
+nana). https://aistudio.google.com/models/
+gemini-2-5-flash-image, 2025. Accessed: 2025-
+10-29. 4
+[9] Xiaojie Gu, Ziying Huang, Jia-Chen Gu, and Kai Zhang. Ul-
+traedit: Training-, subject-, and memory-free lifelong editing
+in language models, 2025. 4
+[10] Amir Hertz, Ron Mokady, Jay Tenenbaum, Kfir Aberman,
+Yael Pritch, and Daniel Cohen-Or. Prompt-to-prompt image
+editing with cross attention control. 2022. 4, 6
+[11] Jack Hessel, Ari Holtzman, Maxwell Forbes, Ronan Le Bras,
+and Yejin Choi. Clipscore: A reference-free evaluation met-
+ric for image captioning, 2022. 8
+[12] Yuxin Jiang, Yuchao Gu, Yiren Song, Ivor Tsang, and
+Mike Zheng Shou. Personalized vision via visual in-context
+learning. arXiv preprint arXiv:2509.25172, 2025. 4
+[13] Jingluohaidijiwanli. How many rare characters are there in
+chinese?, 2020. Zhihu Answer. 7
+[14] Black Forest Labs, Stephen Batifol, Andreas Blattmann,
+Frederic Boesel, Saksham Consul, Cyril Diagne, Tim Dock-
+horn, Jack English, Zion English, Patrick Esser, Sumith Ku-
+lal, Kyle Lacey, Yam Levi, Cheng Li, Dominik Lorenz, Jonas
+M¨uller, Dustin Podell, Robin Rombach, Harry Saini, Axel
+Sauer, and Luke Smith.
+Flux.1 kontext: Flow matching
+for in-context image generation and editing in latent space,
+2025. 3
+[15] Rui Lan, Yancheng Bai, Xu Duan, Mingxing Li, Dongyang
+Jin,
+Ryan Xu,
+Dong Nie,
+Lei Sun,
+and Xiangxiang
+Chu.
+Flux-text: A simple and advanced diffusion trans-
+former baseline for scene text editing.
+arXiv preprint
+arXiv:2505.03329, 2025. 2
+[16] Hongyu Li, Manyuan Zhang, Dian Zheng, Ziyu Guo, Yi-
+meng Jia, Kaituo Feng, Hao Yu, Yexin Liu, Yan Feng, Peng
+Pei, Xunliang Cai, Linjiang Huang, Hongsheng Li, and Si
+Liu. Editthinker: Unlocking iterative reasoning for any im-
+age editor, 2025. 4
+[17] Tianyi Liang, Jiangqi Liu, Yifei Huang, Shiqi Jiang, Jian-
+shen Shi, Changbo Wang, and Chenhui Li.
+Textcen-
+gen: Attention-guided text-centric background adaptation
+for text-to-image generation, 2025. 4
+[18] Yunlong Lin, Zixu Lin, Haoyu Chen, Panwang Pan, Chenxin
+Li, Sixiang Chen, Wen Kairun, Yeying Jin, Wenbo Li, and
+Xinghao Ding. Jarvisir: Elevating autonomous driving per-
+ception with intelligent image restoration. In Proceedings of
+10
+the IEEE/CVF Conference on Computer Vision and Pattern
+Recognition (CVPR), 2025. 4
+[19] Yunlong Lin, Zixu Lin, Kunjie Lin, Jinbin Bai, Panwang Pan,
+Chenxin Li, Haoyu Chen, Zhongdao Wang, Xinghao Ding,
+Wenbo Li, and Shuicheng Yan. Jarvisart: Liberating human
+artistic creativity via an intelligent photo retouching agent.
+arXiv preprint arXiv:2506.17612, 2025.
+[20] Yunlong Lin, Linqing Wang, Kunjie Lin, Zixu Lin, Kaix-
+iong Gong, Wenbo Li, Bin Lin, Zhenxi Li, Shiyi Zhang,
+Yuyang Peng, Wenxun Dai, Xinghao Ding, Chunyu Wang,
+and Qinglin Lu. Jarvisevo: Towards a self-evolving photo
+editing agent with synergistic editor-evaluator optimization,
+2025. 4
+[21] Zhiqiu Lin, Deepak Pathak, Baiqi Li, Jiayao Li, Xide Xia,
+Graham Neubig, Pengchuan Zhang, and Deva Ramanan.
+Evaluating text-to-visual generation with image-to-text gen-
+eration. arXiv preprint arXiv:2404.01291, 2024. 8
+[22] Yaron Lipman, Ricky T. Q. Chen, Heli Ben-Hamu, Maxi-
+milian Nickel, and Matt Le. Flow matching for generative
+modeling, 2023. 3
+[23] Lu Liu, Chunlei Cai, Shaocheng Shen, Jianfeng Liang,
+Weimin Ouyang, Tianxiao Ye, Jian Mao, Huiyu Duan,
+Jiangchao Yao, Xiaoyun Zhang, Qiang Hu, and Guangtao
+Zhai. Moa-vr: A mixture-of-agents system towards all-in-
+one video restoration, 2025. 4
+[24] Rosanne Liu, Dan Garrette, Chitwan Saharia, William Chan,
+Adam Roberts, Sharan Narang, Irina Blok, Rj Mical, Mo-
+hammad Norouzi, and Noah Constant.
+Character-aware
+models improve visual text rendering. In Proceedings of the
+61st Annual Meeting of the Association for Computational
+Linguistics (Volume 1: Long Papers), pages 16270–16297,
+Toronto, Canada, 2023. Association for Computational Lin-
+guistics. 3, 4, 5
+[25] Shiyu Liu, Yucheng Han, Peng Xing, Fukun Yin, Rui Wang,
+Wei Cheng, Jiaqi Liao, Yingming Wang, Honghao Fu, Chun-
+rui Han, Guopeng Li, Yuang Peng, Quan Sun, Jingwei Wu,
+Yan Cai, Zheng Ge, Ranchen Ming, Lei Xia, Xianfang Zeng,
+Yibo Zhu, Binxing Jiao, Xiangyu Zhang, Gang Yu, and
+Daxin Jiang. Step1x-edit: A practical framework for gen-
+eral image editing, 2025. 3
+[26] Zeyu Liu, Weicong Liang, Zhanhao Liang, Chong Luo, Ji
+Li, Gao Huang, and Yuhui Yuan. Glyph-byt5: A customized
+text encoder for accurate visual text rendering. arXiv preprint
+arXiv:2403.09622, 2024. 2
+[27] Runnan Lu, Yuxuan Zhang, Jiaming Liu, Haofan Wang,
+and Yiren Song.
+Easytext: Controllable diffusion trans-
+former for multilingual text rendering.
+arXiv preprint
+arXiv:2505.24417, 2025. 3
+[28] Jian Ma, Mingjun Zhao, Chen Chen, Ruichen Wang, Di Niu,
+Haonan Lu, and Xiaodong Lin. Glyphdraw: Seamlessly ren-
+dering text with intricate spatial structures in text-to-image
+generation, 2023. 3, 4
+[29] Yue Ma, Yingqing He, Xiaodong Cun, Xintao Wang, Siran
+Chen, Xiu Li, and Qifeng Chen. Follow your pose: Pose-
+guided text-to-video generation using pose-free videos. In
+Proceedings of the AAAI Conference on Artificial Intelli-
+gence, pages 4117–4125, 2024. 2
+[30] Yue Ma, Hongyu Liu, Hongfa Wang, Heng Pan, Yingqing
+He, Junkun Yuan, Ailing Zeng, Chengfei Cai, Heung-Yeung
+Shum, Wei Liu, et al. Follow-your-emoji: Fine-controllable
+and expressive freestyle portrait animation. In SIGGRAPH
+Asia 2024 Conference Papers, pages 1–12, 2024. 3
+[31] Yue Ma, Qingyan Bai, Hao Ouyang, Ka Leong Cheng, Qi-
+uyu Wang, Hongyu Liu, Zichen Liu, Haofan Wang, Jingye
+Chen, Yujun Shen, and Qifeng Chen. Calligrapher: Freestyle
+text image customization, 2025. 4
+[32] Yue Ma, Kunyu Feng, Zhongyuan Hu, Xinyu Wang,
+Yucheng Wang, Mingzhe Zheng, Xuanhua He, Chenyang
+Zhu, Hongyu Liu, Yingqing He, et al. Controllable video
+generation: A survey.
+arXiv preprint arXiv:2507.16869,
+2025. 2
+[33] Yue Ma,
+Kunyu Feng,
+Xinhua Zhang,
+Hongyu Liu,
+David Junhao Zhang, Jinbo Xing, Yinhan Zhang, Ayden
+Yang, Zeyu Wang, and Qifeng Chen. Follow-your-creation:
+Empowering 4d creation through video inpainting.
+arXiv
+preprint arXiv:2506.04590, 2025. 2
+[34] Yue Ma, Yingqing He, Hongfa Wang, Andong Wang, Leqi
+Shen, Chenyang Qi, Jixuan Ying, Chengfei Cai, Zhifeng Li,
+Heung-Yeung Shum, et al. Follow-your-click: Open-domain
+regional image animation via motion prompts. In Proceed-
+ings of the AAAI Conference on Artificial Intelligence, pages
+6018–6026, 2025. 3
+[35] Yue Ma, Yulong Liu, Qiyuan Zhu, Ayden Yang, Kunyu Feng,
+Xinhua Zhang, Zhifeng Li, Sirui Han, Chenyang Qi, and
+Qifeng Chen. Follow-your-motion: Video motion transfer
+via efficient spatial-temporal decoupled finetuning.
+arXiv
+preprint arXiv:2506.05207, 2025. 2
+[36] Yue Ma, Zexuan Yan, Hongyu Liu, Hongfa Wang, Heng
+Pan, Yingqing He, Junkun Yuan, Ailing Zeng, Chengfei Cai,
+Heung-Yeung Shum, et al. Follow-your-emoji-faster: To-
+wards efficient, fine-controllable, and expressive freestyle
+portrait animation. arXiv preprint arXiv:2509.16630, 2025.
+3
+[37] Yue Ma, Zhikai Wang, Tianhao Ren, Mingzhe Zheng,
+Hongyu Liu, Jiayi Guo, Mark Fong, Yuxuan Xue, Zixi-
+ang Zhao, Konrad Schindler, et al.
+Fastvmt: Eliminat-
+ing redundancy in video motion transfer.
+arXiv preprint
+arXiv:2602.05551, 2026. 2
+[38] Alex Nichol, Prafulla Dhariwal, Aditya Ramesh, Pranav
+Shyam, Pamela Mishkin, Bob McGrew, Ilya Sutskever, and
+Mark Chen. Glide: Towards photorealistic image generation
+and editing with text-guided diffusion models, 2022. 4
+[39] OpenAI. Gpt-image-1, 2025. 4
+[40] Nobuyuki Otsu. A threshold selection method from gray-
+level histograms. IEEE Transactions on Systems, Man, and
+Cybernetics, 9(1):62–66, 1979. 5
+[41] William Peebles and Saining Xie. Scalable diffusion models
+with transformers, 2023. 2, 3
+[42] Colin Raffel, Noam M. Shazeer, Adam Roberts, Katherine
+Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li,
+and Peter J. Liu. Exploring the limits of transfer learning
+with a unified text-to-text transformer. J. Mach. Learn. Res.,
+21:140:1–140:67, 2019. 4
+11
+[43] Olaf Ronneberger, Philipp Fischer, and Thomas Brox. U-net:
+Convolutional networks for biomedical image segmentation,
+2015. 3
+[44] Chitwan Saharia, William Chan, Saurabh Saxena, Lala
+Li, Jay Whang, Emily L. Denton, Seyed Kamyar Seyed
+Ghasemipour,
+Burcu
+Karagol
+Ayan,
+S.
+S.
+Mahdavi,
+Raphael Gontijo Lopes,
+Tim Salimans,
+Jonathan Ho,
+David J. Fleet, and Mohammad Norouzi. Photorealistic text-
+to-image diffusion models with deep language understand-
+ing. ArXiv, abs/2205.11487, 2022. 4
+[45] Yutao Shen, Junkun Yuan, Toru Aonishi, Hideki Nakayama,
+and Yue Ma. Follow-your-preference: Towards preference-
+aligned image inpainting. arXiv preprint arXiv:2509.23082,
+2025. 3
+[46] Wenda Shi, Yiren Song, Dengming Zhang, Jiaming Liu, and
+Xingxing Zou. Fonts: Text rendering with typography and
+style controls. arXiv preprint arXiv:2412.00136, 2024.
+[47] Wenda Shi, Yiren Song, Zihan Rao, Dengming Zhang, Ji-
+aming Liu, and Xingxing Zou.
+Wordcon: Word-level ty-
+pography control in scene text rendering.
+arXiv preprint
+arXiv:2506.21276, 2025. 3
+[48] Ying Tai, Nikai Du, Rui Xie, Zhennan Chen, Qian Wang,
+Zhengkai Jiang, Kai Zhang, and Jian Yang.
+Investigating
+text insulation and attention mechanisms for complex visual
+text generation, 2026. 2, 3, 4, 5, 6
+[49] Image Team, Huanqia Cai, Sihan Cao, Ruoyi Du, Peng Gao,
+Steven Hoi, Zhaohui Hou, Shijie Huang, Dengyang Jiang,
+Xin Jin, Liangchen Li, Zhen Li, Zhong-Yu Li, David Liu,
+Dongyang Liu, Junhan Shi, Qilong Wu, Feng Yu, Chi Zhang,
+Shifeng Zhang, and Shilin Zhou. Z-image: An efficient im-
+age generation foundation model with single-stream diffu-
+sion transformer, 2025. 2, 3
+[50] Kimi Team, Tongtong Bai, Yifan Bai, Yiping Bao, SH Cai,
+Yuan Cao, Y Charles, HS Che, Cheng Chen, Guanduo Chen,
+et al. Kimi k2. 5: Visual agentic intelligence. arXiv preprint
+arXiv:2602.02276, 2026. 3, 7
+[51] Yuxiang Tuo, Wangmeng Xiang, Jun-Yan He, Yifeng Geng,
+and Xuansong Xie. Anytext: Multilingual visual text gener-
+ation and editing. In International Conference on Learning
+Representations, pages 56783–56799, 2024. 3, 5
+[52] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszko-
+reit, Llion Jones, Aidan N Gomez, Ł ukasz Kaiser, and Illia
+Polosukhin. Attention is all you need. In Advances in Neu-
+ral Information Processing Systems. Curran Associates, Inc.,
+2017. 6
+[53] Jiangshan Wang, Yue Ma, Jiayi Guo, Yicheng Xiao, Gao
+Huang, and Xiu Li.
+Cove: Unleashing the diffusion fea-
+ture correspondence for consistent video editing. Advances
+in Neural Information Processing Systems, 37:96541–96565,
+2024. 3
+[54] Jiangshan Wang, Junfu Pu, Zhongang Qi, Jiayi Guo, Yue Ma,
+Nisha Huang, Yuxin Chen, Xiu Li, and Ying Shan. Tam-
+ing rectified flow for inversion and editing. arXiv preprint
+arXiv:2411.04746, 2024.
+[55] Qinghe Wang, Xiaoyu Shi, Baolu Li, Weikang Bian, Quande
+Liu, Huchuan Lu, Xintao Wang, Pengfei Wan, Kun Gai, and
+Xu Jia. Multishotmaster: A controllable multi-shot video
+generation framework.
+arXiv preprint arXiv:2512.03041,
+2025.
+[56] Chenfei Wu, Jiahao Li, Jingren Zhou, Junyang Lin, Kaiyuan
+Gao, Kun Yan, Sheng ming Yin, Shuai Bai, Xiao Xu, Yilei
+Chen, Yuxiang Chen, Zecheng Tang, Zekai Zhang, Zhengyi
+Wang, An Yang, Bowen Yu, Chen Cheng, Dayiheng Liu, De-
+qing Li, Hang Zhang, Hao Meng, Hu Wei, Jingyuan Ni, Kai
+Chen, Kuan Cao, Liang Peng, Lin Qu, Minggang Wu, Peng
+Wang, Shuting Yu, Tingkun Wen, Wensen Feng, Xiaoxiao
+Xu, Yi Wang, Yichang Zhang, Yongqiang Zhu, Yujia Wu,
+Yuxuan Cai, and Zenan Liu. Qwen-image technical report,
+2025. 2, 3
+[57] Linting Xue, Aditya Barua, Noah Constant, Rami Al-Rfou,
+Sharan Narang, Mihir Kale, Adam Roberts, and Colin Raf-
+fel. Byt5: Towards a token-free future with pre-trained byte-
+to-byte models, 2022. 4
+[58] Zexuan Yan, Yue Ma, Chang Zou, Wenteng Chen, Qifeng
+Chen, and Linfeng Zhang. Eedit: Rethinking the spatial and
+temporal redundancy for efficient image editing, 2025. 3
+[59] Zhenyu Yan, Jian Wang, Aoqiang Wang, Yuhan Li, Wenxi-
+ang Shang, and Ran Lin. Textmaster: A unified framework
+for realistic text editing via glyph-style dual-control, 2025. 4
+[60] Yukang Yang, Dongnan Gui, Yuhui Yuan, Weicong Liang,
+Haisong Ding, Han Hu, and Kai Chen. Glyphcontrol: Glyph
+conditional control for visual text generation. Advances in
+Neural Information Processing Systems, 36, 2024. 4
+[61] Ruijie Ye, Jiayi Zhang, Zhuoxin Liu, Zihao Zhu, Siyuan
+Yang, Li Li, Tianfu Fu, Franck Dernoncourt, Yue Zhao, Ji-
+acheng Zhu, Ryan Rossi, Wenhao Chai, and Zhengzhong
+Tu. Agent banana: High-fidelity image editing with agen-
+tic thinking and tooling, 2026. 4
+[62] Jusheng Zhang, Kaitong Cai, Yijia Fan, Jian Wang, and Keze
+Wang.
+Cf-vlm:counterfactual vision-language fine-tuning,
+2025. 3
+[63] Jusheng Zhang, Yijia Fan, Wenjun Lin, Ruiqi Chen, Haoyi
+Jiang, Wenhao Chai, Jian Wang, and Keze Wang. GAM-
+agent: Game-theoretic and uncertainty-aware collaboration
+for complex visual reasoning.
+In The Thirty-ninth An-
+nual Conference on Neural Information Processing Systems,
+2025.
+[64] Jusheng Zhang, Zimeng Huang, Yijia Fan, Ningyuan Liu,
+Mingyan Li, Zhuojie Yang, Jiawei Yao, Jian Wang, and
+Keze Wang.
+KABB: Knowledge-aware bayesian bandits
+for dynamic expert coordination in multi-agent systems. In
+Forty-second International Conference on Machine Learn-
+ing, 2025. 3
+[65] Kai Zhang, Lingbo Mo, Wenhu Chen, Huan Sun, and Yu Su.
+Magicbrush: A manually annotated dataset for instruction-
+guided image editing. In Advances in Neural Information
+Processing Systems, 2023. 4
+[66] Ruiqiang Zhang, Hengyi Wang, Chang Liu, Guanjie Wang,
+Zehua Ma, and Weiming Zhang. Freetext: Training-free text
+rendering in diffusion transformers via attention localization
+and spectral glyph injection, 2026. 2
+[67] Zhilin Zhang, Xiang Zhang, Jiaqi Wei, Yiwei Xu, and
+Chenyu You.
+Postergen: Aesthetic-aware paper-to-poster
+generation via multi-agent llms. arXiv:2508.17188, 2025.
+4
+12
+[68] Jun Zhou, Jiahao Li, Zunnan Xu, Hanhui Li, Yiji Cheng,
+Fa-Ting Hong, Qin Lin, Qinglin Lu, and Xiaodan Liang.
+Fireedit: Fine-grained instruction-based image editing via
+region-aware vision language model, 2025. 4
+[69] Chenyang Zhu, Kai Li, Yue Ma, Longxiang Tang, Chengyu
+Fang, Chubin Chen, Qifeng Chen, and Xiu Li. Instantswap:
+Fast customized concept swapping across sharp shape differ-
+ences. arXiv preprint arXiv:2412.01197, 2024. 3
+[70] Kaiwen Zhu, Jinjin Gu, Zhiyuan You, Yu Qiao, and Chao
+Dong.
+An intelligent agentic system for complex image
+restoration problems, 2025. 4
+[71] Yuanzhi Zhu, Jiawei Liu, Feiyu Gao, Wenyu Liu, Xinggang
+Wang, Peng Wang, Fei Huang, Cong Yao, and Zhibo Yang.
+Visual text generation in the wild. pages 89–106, 2024. 4
+[72] Yushen Zuo, Qi Zheng, Mingyang Wu, Xinrui Jiang, Ren-
+jie Li, Jian Wang, Yide Zhang, Gengchen Mai, Lihong V.
+Wang, James Zou, Xiaoyu Wang, Ming-Hsuan Yang, and
+Zhengzhong Tu. 4kagent: Agentic any image to 4k super-
+resolution. 2025. 4
+13
+A. More Qualitative Results
+This section provides additional qualitative examples as
+shown in Fig. 9, 10, 11 for visual comparison.
+14
+Original
+w/o Refine
+Iterative Reﬁne
+Original
+w/o Refine
+Iterative Reﬁne
+Figure 9. More qualitative results for refinement process.
+15
+A documentary poster 
+displays "Resplendent" in 
+warm colors.
+A white background 
+displaying \"|1 1 1 |\", \"|a b 
+c |\", \"|a² b² c²|\" in 
+mathematical notation.
+Qwen Image
+A theoretical physics paper 
+presents \"F=-k_BT lnZ\" in 
+complex notation.
+A classroom banner displays 
+\"Star\" in twinkling letters
+A thermodynamics lecture 
+shows \"λ_dB=h/p=h/(mv)\"
+on a green chalkboard
+A lecture board displaying 
+\"Av=λv\", \"(A-λI)v=0\", 
+\"det(A-λI)=0\" in clear script.
+⼀块⻛化的招牌上⽤传统书法
+写着\"霡霂（⼩⾬）\"
+A classroom blackboard bears 
+\"Gmm/r²\" in handwritten 
+script.
+Ours
+Flux dev
+Flux klein
+GLM Image
+Figure 10. More qualitative results for GlyphBanana, Qwen-Image as base model.
+16
+A poster displaying \"iℏ∂ψ/∂t=Ĥψ\", 
+\"Ĥ=-ℏ²/2m∇²+V\", \"Ĥψ=Eψ\" for 
+educational purposes."
+玩具盒上用可爱粉色字体写着\"娃娃\"
+"A science museum exhibit shows 
+\"∇×(∇×F)=∇(∇·F)-∇²F\" on an 
+information panel."
+An academic journal page displays 
+\"∮_C Pdx+Qdy=∬_D (∂Q/∂x-
+∂P/∂y)dσ\" in serif typography."
+An art installation features 
+\"Mellifluous\" in metallic letters.
+A physics lecture board shows 
+\"E²=(pc)²+(m₀c²)²\" written in white 
+chalk.
+一块风化的招牌上用传统书法写着\"
+遮莫（不管，任凭）\"
+一扇古旧的窗户上发黄的羊皮纸写着
+\"泬寥（空旷而清朗的样子）\"
+Z-Image
+Ours
+GLM-Image
+FLUX-dev
+TextCrafter
+Figure 11. More qualitative results for GlyphBanana, Z-Image as base model.
+17
+Table 4. Illustration of GlyphBanana-Benchmark. The bench-
+mark contains multimodal inputs spanning English, Chinese, and
+scientific-formula subsets, together with reference images and
+masks, and follows a ladder-shaped difficulty design. Avg.|Text|
+denotes the average length of the target rendered text, and
+Avg.|Prompt| denotes the average length of the corresponding
+prompt.
+Subset
+Num.
+Avg.|Text|
+Avg.|Prompt|
+English Subsets
+GlyphBanana-En (Easy)
+50
+4.08
+47.74
+GlyphBanana-En (Rare)
+25
+8.92
+56.84
+Chinese Subsets
+GlyphBanana-Zh (Easy)
+50
+2.00
+19.00
+GlyphBanana-Zh (Rare)
+25
+11.20
+27.48
+Scientific Subsets (Ladder Difficulty)
+GlyphBanana-F (Easy)
+35
+6.46
+62.46
+GlyphBanana-F (Mid)
+45
+16.04
+72.64
+GlyphBanana-F (Hard L1)
+40
+41.41
+94.12
+GlyphBanana-F (Hard L2)
+20
+303.35
+376.85
+Total / Average
+290
+32.68
+76.62
+B. Benchmark Statistics
+B.1. GlyphBanana-Benchmark Overview
+Table 4 reports the detailed statistics of GlyphBanana-
+Benchmark. The benchmark spans English, Chinese, and
+scientific-formula subsets, and the formula branch follows
+a ladder-shaped difficulty schedule from short expressions
+to long multi-line structures. This progression is useful for
+stress-testing both the layout planner and the auxiliary ren-
+dering tools under increasingly complex text lengths and
+prompt conditions.
+C. Layout Planner Agent
+C.1. VLM-Based Text Grounding with Auxiliary
+Tools
+Table 5 summarizes the ablation study for the layout plan-
+ner, where IoU measures the overlap between predicted and
+ground-truth bounding boxes for formula placement. The
+VLM only setting uses the VLM without any coordinate-
+grid overlay as the baseline, while the remaining variants
+equip the same planner with grids of different densities. The
+Table 5.
+Ablation Study on VLM-Based Text Grounding with
+Auxiliary Tools.
+Configuration
+Mean IoU↑Median IoU↑Std↓Improvement
+VLM only)
+0.2703
+0.2508
+0.1620
+–
+VLM + 3×3 Grid
+0.4475
+0.3892
+0.1464
++65.6%
+VLM + 5×5 Grid
+0.5531
+0.5406
+0.1280
++104.6%
+VLM + 8×8 Grid
+0.3776
+0.3628
+0.1552
++39.7%
+key conclusion is that moderate-density coordinate aids are
+most effective: adding a 5×5 grid raises mean IoU from
+0.2703 to 0.5531, corresponding to a 104.6% improvement
+over the VLM-only baseline.
+In contrast, the 8×8 grid
+achieves only a 39.7% gain, suggesting that overly dense
+visual guides introduce clutter and weaken spatial ground-
+ing. This observation motivates the current planner design,
+which uses a coordinate overlay to improve spatial ground-
+ing while explicitly instructing the VLM to ignore the red
+guide lines when describing scene content.
+C.2. Formula Renderer as an Auxiliary Tool
+The formula renderer provides a deterministic auxiliary tool
+for synthesizing the glyph template used by the down-
+stream injection stage.
+According to the implementa-
+tion in infer/formula helper.py, the tool first de-
+tects whether the input should be treated as mathemati-
+cal content, converts Unicode math symbols into LaTeX-
+compatible expressions when needed, performs lightweight
+automatic line breaking for long expressions, and then dis-
+patches the content to a renderer selected by capability. For
+LaTeX-like content, the preferred route is MathJax through
+a Node.js backend; if that path is unavailable, the system
+falls back to matplotlib mathtext; otherwise, plain text
+is rendered with PIL and a font selected from the available
+registry. Multi-line expressions are rendered line by line
+and then vertically composed, after which the final glyph
+canvas can optionally be rotated to match the planned lay-
+out.
+C.3. Glyph Template Injection Illustration
+Once the auxiliary renderer produces a glyph template
+aligned with the typography plan, GlyphBanana injects that
+template into the latent-space refinement process.
+Fig-
+ure 13 visualizes this stage and complements the main-
+paper method description by showing how the rendered
+glyph prior is fused with the diffusion latent while preserv-
+ing the surrounding scene structure.
+18
+Input text + bbox
+(+ color / weight / font)
+Unicode-to-LaTeX conversion
+and auto line breaking
+LaTeX-like
+content?
+MathJax
+available?
+Render with MathJax
+SVG →PNG
+Fallback to
+matplotlib mathtext
+Render plain text
+with PIL + font registry
+Compose to target canvas,
+stack multi-line re-
+sults, apply rotation
+Glyph template image
+No
+Yes
+Yes
+No
+Figure 12. Execution flow of the formula-rendering auxiliary tool used by GlyphBanana. The implementation prefers MathJax for rich
+LaTeX formulas, falls back to matplotlib mathtext when Node.js or SVG conversion is unavailable, and uses PIL-based text rendering
+for non-LaTeX content.
+Early Stage
+Later Stage
+Glyph Latents
+Attention Enhancing
+𝑥!~σ
+𝑥"~𝐷#$#
+Figure 13. Schematic diagram of enhanced text rendering by injecting glyph templates in latent space.
+D. VLM Agent Prompt Templates
+This section documents the prompt templates used by the
+current VLM agent implementation. The prompt stack is
+19
+designed to be model-agnostic and can be attached to dif-
+ferent diffusion backbones as long as they support the re-
+quired conditioning interfaces. In a representative work-
+flow, a text-to-image diffusion model first produces a ref-
+erence image, after which the VLM planner infers a struc-
+tured typography plan from the reference image, the user
+prompt, and the target text contents. The clean-prompt and
+style-prompt modules then support background regenera-
+tion, glyph injection, and subsequent harmonization with
+an image-to-image diffusion model.
+D.1. Typography Analysis Prompt
+Scenario.
+This prompt is invoked after Stage 2 reference-
+image generation and before any glyph injection is pre-
+pared. It is used only when the user does not manually
+override text regions.
+Function.
+Its role is to transform an unstructured visual
+reference into a machine-readable typography plan that
+specifies both global scene attributes and per-region render-
+ing instructions.
+Inputs and outputs.
+The call consumes four pieces of in-
+formation: the Stage 2 reference image, the original user
+prompt, the list of text or formula contents to be ren-
+dered, and a dynamically generated font list.
+The re-
+turned output is a strict JSON object with two top-level
+fields, image analysis and text regions. The for-
+mer provides scene-level descriptors such as background
+style, dominant colors, and text style hints; the latter pro-
+vides region-level attributes such as bounding boxes, font
+choice, color, alignment, and rotation.
+Dependencies.
+The
+prompt
+depends
+on
+the
+grid-overlay
+utility,
+the
+font
+registry
+exposed
+by
+infer/formula helper.py, and the VLM backend
+configured in VLMAgent. The resulting typography plan
+is later consumed by both the glyph injector and the Stage 4
+style harmonizer.
+Prompt: Typography Analysis
+You are an expert in image typography analysis. Given
+a reference image with a 5×5 grid and coordinate anno-
+tations, analyze the natural text rendering style and over-
+all scene. Then plan the best typography layout for each
+text/formula item.
+Critical constraints.
+• CRITICAL: The reference image shows text that is
+FLAT and FACING the screen directly (frontal view,
+no perspective distortion). The planned boxes must
+also remain flat and frontal, with parallel top and bot-
+tom edges and no angled or perspective-distorted re-
+gions.
+• IMPORTANT: The red grid lines and coordinate la-
+bels are ONLY positioning aids added by the sys-
+tem. They are not part of the actual image and must
+be ignored when describing background style,
+dominant colors, and text style hint.
+• The
+5×5
+grid
+uses
+the
+coordinates
+{0.0, 0.2, 0.4, 0.6, 0.8, 1.0}
+on
+each
+axis
+and
+provides the positioning reference for normalized
+coordinates in [0, 1].
+Per-region fields.
+• content: target text or formula.
+• bbox: [xmin, ymin, xmax, ymax] in [0, 1], flat and
+horizontal.
+• font: a font selected from the registered font list, or
+auto.
+• font weight: light/regular/bold.
+• font size ratio: scalar in [0.1, 1.0] relative to
+box height.
+• color:
+one of white, black, red, blue,
+green, yellow, orange, brown, gray, gold,
+silver, purple, pink.
+• is latex: boolean flag indicating whether the re-
+gion is a formula.
+• alignment: left/center/right.
+• rotation: rotation angle in degrees, with 0 denot-
+ing horizontal text.
+Available
+fonts
+are
+provided
+dynamically
+through
+the placeholder {font list}.
+The output is re-
+quired to be strict JSON with two top-level entries,
+image analysis and text regions.
+D.2. Generate Clean Prompt
+Scenario.
+This prompt is called at the beginning of
+Stage 3, after the typography plan has already been pro-
+duced and immediately before background denoising and
+glyph injection.
+Function.
+Its role is to remove explicit text-rendering in-
+structions from the original prompt so that the diffusion
+backbone can focus on regenerating a clean background
+rather than hallucinating additional text.
+Inputs and outputs.
+The interface accepts the original
+prompt and optionally a typography plan. In the current
+VLMAgent implementation, the function signature still ex-
+poses typography plan, but the active call path only
+forwards the original prompt text into the VLM prompt
+body. The output is a single rewritten clean prompt string.
+Dependencies.
+This prompt depends on the original user
+prompt and the VLM backend. Its output is then fed di-
+rectly into the Stage 3 denoising step, where it conditions
+20
+the background generation used for subsequent pixel-space
+text compositing and latent injection.
+Prompt: Generate Clean Prompt
+Remove ALL quoted text, formulas, and text-rendering
+instructions from the prompt.
+Keep ONLY the
+scene/background/style description. Add “no text visi-
+ble” at the end.
+Examples.
+• Input: A classroom blackboard displays “E=mc²” in
+elegant chalk writing.
+Output: An empty classroom blackboard as back-
+ground, clear and without any text. No text visible.
+• Input: A stone monument is engraved with “Knowl-
+edge is power”, surrounded by a bamboo grove.
+Output: A blank stone monument as background, sur-
+rounded by a bamboo grove, clear and without any
+text. No text visible.
+Output ONLY the cleaned prompt, nothing else.
+D.3. Generate Style Prompt
+Scenario.
+This prompt is used in Stage 4 when an image-
+to-image diffusion model is employed for style harmo-
+nization.
+It is called after Stage 3 has produced the in-
+jected image and after the planner has already produced
+image analysis.
+Function.
+Its purpose is to compress the scene-level anal-
+ysis into a short editing instruction that preserves the back-
+ground while restyling the foreground text or formulas so
+that they better harmonize with the image.
+Inputs and outputs.
+The input is the image analysis
+field of the typography plan, specifically the background
+style, dominant colors, and text-style hint. The output is a
+short English editing prompt, typically 10–30 words, which
+is then forwarded to the image-to-image diffusion model
+used for harmonization.
+Dependencies.
+This prompt depends on the success of the
+typography-analysis stage, because it reuses the planner’s
+scene descriptors instead of reading the image again. Its
+downstream dependency is the Stage 4 image-to-image dif-
+fusion model, which consumes the resulting editing instruc-
+tion as its conditioning prompt.
+Prompt: Generate Style Prompt
+You generate a SHORT image-editing instruction (10–30
+words) for a style-transfer model.
+Goal: restyle fore-
+ground text to harmonize with the background while
+keeping the background untouched. Do NOT move, re-
+size, or alter any text content or position.
+Examples.
+• Input:
+background style="weathered stone
+wall",
+colors=["#8B7D6B","#A09080"],
+hint="carved stone lettering"
+Output: Restyle text as deeply carved stone engrav-
+ings matching the weathered wall texture and earthy
+tones.
+• Input:
+background style="neon-lit cyberpunk
+street",
+colors=["#FF00FF","#00FFFF"],
+hint="glowing neon sign"
+Output: Make text glow like neon signs with magenta
+and cyan edges against the dark street scene.
+• Input:
+background style="minimalist white
+paper",
+colors=["#FFFFFF","#E0E0E0"],
+hint="clean printed type"
+Output: Render text as crisp black ink print on the
+clean white background with subtle shadow.
+Output ONLY the instruction, nothing else. It must be in
+English and 10–30 words long.
+D.4. Refine Prompt
+Scenario.
+This
+prompt
+is
+a
+reserved
+interface
+in
+VLMAgent for generic prompt enhancement. It is optional
+in the overall pipeline and may be enabled or disabled de-
+pending on the target diffusion backbone and deployment
+strategy.
+Function.
+Its goal is to rewrite a user prompt into a more
+rendering-friendly form while preserving the quoted text
+exactly.
+Inputs and outputs.
+The interface accepts the original
+prompt, an optional text-content hint, the number of vari-
+ants to sample, and a temperature value. It returns one or
+more rewritten prompt strings.
+Dependencies.
+The prompt depends only on the VLM
+backend. In some deployments, this refinement step may
+be replaced by deterministic prompt normalization, so the
+VLM-based refiner remains optional rather than mandatory.
+Prompt: Refine Prompt
+You are a prompt engineer for a text-to-image model that
+renders text inside images.
+1. Keep the original scene description and ALL quoted
+21
+text exactly as-is.
+2. Add that text should be clearly legible,
+well-
+positioned, and high-contrast.
+3. Add brief visual details (lighting, style, materials) that
+make the scene vivid.
+Output only the enhanced prompt, nothing else.
+D.5. Score Image Prompt
+Scenario.
+This prompt defines a generic absolute image
+scorer in VLMAgent. It is not required by the core pipeline,
+because many deployments instead rely on OCR-based se-
+lection or external evaluation metrics.
+Function.
+Its purpose is to assign a single scalar score to
+one generated image by jointly considering image quality,
+prompt alignment, and text readability.
+Inputs and outputs.
+The interface takes one image to-
+gether with the corresponding prompt and an optional ex-
+plicit text-content string. It returns a single floating-point
+score in the range [0, 10].
+Dependencies.
+This prompt depends on the VLM back-
+end and a parsed image input. It is kept as a reusable evalu-
+ation primitive for alternative pipelines, future ablations, or
+backbone-specific selection strategies.
+Prompt: Score Image
+Rate this image 0–10 based on:
+• overall quality (clarity, color, composition): 0–3;
+• alignment with prompt: 0–4;
+• text accuracy and readability (if applicable): 0–3.
+Output only the numeric score, nothing else.
+D.6. Rank Images Prompt
+Scenario.
+This prompt defines a generic multi-image
+ranking interface in VLMAgent.
+Similar to the single-
+image scorer, it is optional and can be switched on when
+a deployment prefers VLM-based ranking over OCR-based
+candidate selection.
+Function.
+Its role is to sort several candidate images from
+best to worst under shared criteria, so that rank positions can
+be converted into stepwise scores.
+Inputs and outputs.
+The call accepts a list of candidate
+images, the original prompt, and optionally the expected
+text string. It returns an ordered index list, which the im-
+plementation then maps to descending scores.
+Dependencies.
+The prompt depends on a multi-image
+VLM call. In many text-rendering settings, this function-
+ality is superseded by OCR-based selection, which is more
+directly tied to rendering precision.
+Prompt: Rank Images
+Rank these {n} images from best to worst based on over-
+all quality, prompt alignment, and text accuracy (if ap-
+plicable). Output only the ranking as comma-separated
+indices (for example, 3,1,4,2), nothing else.
+E. Evaluation Interfaces
+This section summarizes the prompt-based evaluation in-
+terfaces associated with the VLM agent. In a representa-
+tive model-agnostic deployment, candidate selection can be
+performed by OCR-based scoring, which asks the VLM to
+transcribe the rendered text and compares the result against
+the target string extracted from the prompt. Other inter-
+faces, including style scoring, faithfulness scoring, VQAS-
+core, and CLIPScore, remain reusable evaluation compo-
+nents that can be enabled or disabled depending on the eval-
+uation protocol.
+E.1. API-Based OCR Recognition
+Scenario.
+This prompt is used for final candidate selec-
+tion after the reference image, injected result, and harmo-
+nized variants have all been generated.
+Function.
+Its role is to directly transcribe the visible text
+from each candidate image so that the system can compare
+recognized text against the target content and choose the
+most accurate rendering.
+Inputs and outputs.
+For the API-based VLM evaluator,
+the expected text T is extracted from the quoted spans in the
+input prompt. Each call then consumes one candidate image
+and returns a raw recognized text string with no explanation.
+The resulting transcription is subsequently compared with
+T using edit-distance metrics.
+Dependencies.
+This prompt depends on the image can-
+didates produced by the generation pipeline, the quote-
+based text extractor in eval/core/metrics.py, and
+the VLM backend.
+It is a natural selector for model-
+agnostic text-rendering systems because it directly mea-
+sures rendered-text fidelity rather than relying on backbone-
+specific confidence signals.
+The model is asked to directly transcribe the rendered text:
+22
+Prompt: OCR Recognition
+Please read and output ALL the text content visible in
+this image. Only output the text you can see, nothing
+else. If there are multiple text elements, separate them
+with spaces. Do not add any explanations or descriptions,
+just the raw text content.
+Let N(·) denote lowercase normalization with whites-
+pace collapsing, and let dLev be the Levenshtein distance.
+If R is the recognized text, the VLM-based text scores are
+computed as
+  \mat h rm 
+{
+Ac c } _{\mathrm {VLM}
+}=\max
+ 
+\!\left (0,1-\frac {d_{\mathrm {Lev}}(\mathcal {N}(T),\mathcal {N}(R))}{|\mathcal {N}(T)|}\right ), 
+(7)
+  \mat h rm 
+{
+NE D }
+_{\mathrm {VLM}
+}=\ max \!\l eft (0, 1 -
+\
+frac {d_{\mathrm {Lev}}(\mathcal {N}(T),\mathcal {N}(R))}{\max \left (|\mathcal {N}(T)|,|\mathcal {N}(R)|\right )+\varepsilon }\right ), 
+(8)
+where ε is a small constant for numerical stability.
+For the standalone OCR metric used in the benchmark
+tables, we additionally report MinerU-based OCR scores
+with the same edit-distance formulation after normalizing
+the recognized text.
+E.2. VLM Style Score
+Scenario.
+This prompt belongs to the evaluation toolkit
+rather than the active generation path.
+Function.
+It estimates image-level style and quality com-
+patibility through a direct scalar judgment on a 0–10 scale.
+Inputs and outputs.
+The interface takes a single gener-
+ated image as input and returns one scalar score, which is
+normalized into Sstyle.
+Dependencies.
+It depends only on the VLM evaluation
+backend and does not require the original prompt text.
+The VLM style score is implemented as a direct quality
+judgment on a 0–10 scale:
+Prompt: VLM Style Score
+Evaluate the overall quality of this image considering:
+1. image clarity and sharpness;
+2. visual coherence and aesthetics;
+3. proper rendering of all elements.
+Rate from 0–10, respond with only a number.
+If the returned scalar is sstyle ∈[0, 10], we normalize it
+as Sstyle = sstyle
+10 .
+E.3. VLM Faithfulness Score
+Scenario.
+This prompt is used in the evaluation module to
+quantify prompt adherence, but it is not invoked during the
+main generation loop.
+Function.
+Its goal is to measure whether the generated
+image remains faithful to the full prompt, including scene
+description, object presence, style intent, and text place-
+ment.
+Inputs and outputs.
+The interface consumes one gener-
+ated image together with the original prompt and returns
+one scalar score in the range [0, 10], which is then normal-
+ized into Sfaith.
+Dependencies.
+It depends on both the image and the orig-
+inal prompt text, because faithfulness is defined relative to
+the complete semantic condition rather than OCR accuracy
+alone.
+Prompt faithfulness is measured by asking the VLM to
+jointly assess scene consistency, object completeness, style
+fidelity, and text placement:
+Prompt: Faithfulness Score
+You are evaluating how faithfully this generated image
+matches its text prompt.
+Prompt: “original prompt”
+Consider the following aspects:
+1. Scene & background: does the scene match the de-
+scription?
+2. Objects & elements: are all described objects and el-
+ements present?
+3. Style & color:
+does the visual style match the
+prompt’s intent?
+4. Text content & placement: is the text rendered in the
+correct location with correct content?
+Rate the overall faithfulness from 0–10, respond with
+only a number.
+If the raw response is sfaith ∈[0, 10], we use the normal-
+ized score Sfaith = sfaith
+10 .
+E.4. VQAScore Interface
+Scenario.
+This interface is part of the evaluation stack and
+is independent of the generation-time prompt calls in the
+model-agnostic pipeline.
+Function.
+Its role is to compute a paired image-text rele-
+vance score without additional prompt engineering.
+23
+Inputs and outputs.
+The interface takes the generated
+image path and the original prompt P as its text query.
+The output is a scalar relevance score returned by the
+clip-flant5-xxl-based VQAScore model.
+Dependencies.
+It depends on the local VQAScore wrap-
+per under eval/TextCrafter Eval/vqascore.py
+and the underlying t2v metrics implementation.
+For VQAScore, we do not perform extra prompt engineer-
+ing. Instead, the original prompt P is directly used as the
+text query paired with image I in the clip-flant5-xxl
+scorer:
+Text Query for VQAScore
+Input text to VQAScore: the original prompt P itself,
+without additional instructions or template wrapping.
+The resulting score is
+  S_ { \mathrm  {VQA}} = f_{\mathrm {VQA}}(I,P), 
+(9)
+where fVQA denotes the paired image-text score returned
+by the VQAScore model.
+E.5. CLIP Score
+Scenario.
+This metric is used only in the evaluation mod-
+ule and is not part of the runtime prompt workflow of the
+model-agnostic generation pipeline.
+Function.
+It measures global image-text alignment be-
+tween the generated result and the original prompt.
+Inputs and outputs.
+The implementation takes one im-
+age path and one prompt string, prepends the fixed text
+prefix “A photo depicts” to the prompt, and returns a non-
+negative scalar CLIPScore.
+Dependencies.
+It depends on the CLIP ViT-L/14 encoder
+loaded in eval/core/metrics.py.
+The image and
+text embeddings are normalized before their cosine simi-
+larity is rescaled into the final score.
+For image I and prompt P, CLIP produces image and text
+embeddings, denoted by ϕimg(I) and ϕtext(P). The im-
+plementation converts cosine similarity into a non-negative
+score via
+  S_{ \ mat h rm 
+{
+CLIP}} = 2.5 \cd
+ot \max \! \left ( \fr
+a c
+ 
+{\phi _{\mathrm {img}}(I)^\top \phi _{\mathrm {text}}(P)} {\|\phi _{\mathrm {img}}(I)\|_2\;\|\phi _{\mathrm {text}}(P)\|_2},\, 0 \right ). (10)
+24
