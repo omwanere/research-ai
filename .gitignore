@@ -1,32 +1,58 @@
-.env
-venv/
+# Python
 __pycache__/
-node_modules/
-*.pdf
-*.db
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# data files
-Data/pdfs
-Data/processed
-Data/chunks
-Data/vector_db
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
 
-# embeddings
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Data directories (large / generated)
+Data/pdfs/
+Data/processed/
+Data/chunks/
+Data/vector_db/
 Data/*.json
 
-# python
-__pycache__/
-*.pyc
+# PDF files
+*.pdf
 
-# virtual env
-venv/
-.env
+# Node / Next.js
+Frontend/node_modules/
+Frontend/.next/
+Frontend/out/
+Frontend/.vercel/
 
-# node
-frontend/node_modules
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# next
-frontend/.next
+# IDE
+.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 
-# env
-.env
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# PyMuPDF / sentence-transformers cache
+.cache/
