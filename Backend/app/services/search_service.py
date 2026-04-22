@@ -1,26 +1,27 @@
 from sentence_transformers import SentenceTransformer
-from Backend.app.db import get_qdrant_client
+from app.db import get_qdrant_client
+from app.config import EMBEDDING_MODEL, COLLECTION_NAME
 
-model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+_embed_model = SentenceTransformer(EMBEDDING_MODEL)
 
 
-def search_papers(query):
-
-    vector = model.encode(query).tolist()
+def search_papers(query: str, limit: int = 5) -> list[dict]:
+    vector = _embed_model.encode(query).tolist()
 
     results = get_qdrant_client().query_points(
-        collection_name="research_papers",
+        collection_name=COLLECTION_NAME,
         query=vector,
-        limit=5
+        limit=limit,
+        with_payload=True,
     )
 
     papers = []
-
     for r in results.points:
+        payload = r.payload or {}
         papers.append({
-            "chunk": r.payload["chunk_file"],
-            "text": r.payload["text"][:200],
-            "score": r.score
+            "source": payload.get("chunk_file") or payload.get("source") or payload.get("filename") or "Unknown",
+            "snippet": payload.get("text", "")[:300],
+            "score": round(r.score, 4),
         })
 
     return papers
